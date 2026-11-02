@@ -1,0 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Font Family Variables: Exactly 2 Typefaces (Instrument Serif & Plus Jakarta Sans) */
+  --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* SELA Design Tokens */
+  --surface: #FBF9F5;
+  --surface-container-lowest: #FFFFFF;
+  --surface-container-low: #F5F3EF;
+  --surface-container: #EFEEEA;
+  --surface-container-high: #EAE8E4;
+  --on-surface: #1B1C1A;
+  --on-surface-variant: #544339;
+  --outline-variant: #E7E2DA;
+  --outline: #877367;
+  --primary: #924805;
+  --primary-container: #B05F20;
+  --primary-fixed: #FFDCC7;
+  --on-primary-fixed: #311300;
+  --inverse-surface: #241E1B;
+  --inverse-on-surface: #FBF9F5;
+  --status-paid: #1E7E34;
+  --status-cooking: #D97706;
+  --status-error: #BA1A1A;
+  --status-pending: #766F66;
+}
+
+body {
+  color: var(--on-surface);
+  background-color: var(--surface);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabular Numerals for Consistent Currency and Timer Alignments */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.font-price-tabular {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.font-editorial {
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+}
+
+.grid-pattern {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(27, 28, 26, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(27, 28, 26, 0.03) 1px, transparent 1px);
+}
+
+/* Touch Target Minimum Sizes */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.kds-touch {
+  min-height: 56px;
+  min-width: 56px;
+}
+
+/* Safe Area Insets for Mobile / iOS */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+}
+
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 0px);
+}
+
+/* Respect Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Thermal Receipt 58mm & 80mm Print Styling */
+/* Hide scrollbar while preserving smooth touch & wheel scrolling */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: monospace, 'Courier New', Courier;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .receipt-58mm {
+    width: 58mm;
+    max-width: 58mm;
+    font-size: 11px;
+    line-height: 1.2;
+    padding: 2mm;
+    margin: 0 auto;
+  }
+
+  .receipt-80mm {
+    width: 80mm;
+    max-width: 80mm;
+    font-size: 12px;
+    line-height: 1.3;
+    padding: 3mm;
+    margin: 0 auto;
+  }
+}

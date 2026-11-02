@@ -1,0 +1,513 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum OrderStatus {
+  QUEUED
+  COOKING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  WAITING_CASHIER
+  PENDING
+  PAID
+  EXPIRED
+  FAILED
+}
+
+enum IdempotencyState {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum PaymentMethod {
+  QRIS
+  CASH
+}
+
+enum PaymentGateway {
+  MIDTRANS
+  MANUAL_CASH
+}
+
+enum StaffRole {
+  CASHIER
+  BARISTA
+  ADMIN
+}
+
+enum TagDimension {
+  MOOD
+  FLAVOR
+  FORMAT
+}
+
+enum RefundMethod {
+  MANUAL_CASH
+}
+
+enum PrintFormat {
+  THERMAL_58MM
+  THERMAL_80MM
+}
+
+enum PrintDocumentType {
+  CUSTOMER_RECEIPT
+  CASHIER_RECEIPT
+  KITCHEN_TICKET
+}
+
+enum PrintTarget {
+  BROWSER_DIALOG
+  RECEIPT_PRINTER
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+model Table {
+  id            String         @id @default(cuid())
+  tableNumber   String         @unique // e.g. "01", "07"
+  label         String?        // e.g. "Area Bar 01", "VIP Indoor 02"
+  qrSlug        String         @unique // e.g. "sela-table-01"
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  orders        Order[]
+  guestSessions GuestSession[]
+
+  @@map("tables")
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  name      String     @unique // "Kopi", "Non-Kopi", "Makanan"
+  slug      String     @unique // "kopi", "non-kopi", "makanan"
+  sortOrder Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     MenuItem[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id             String          @id @default(cuid())
+  name           String          @unique // "Santai", "Manis", "Dingin"
+  slug           String          @unique // "santai", "manis", "dingin"
+  dimension      TagDimension
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  menuItemTags   MenuItemTag[]
+  quizOptionTags QuizOptionTag[]
+
+  @@index([dimension])
+  @@map("tags")
+}
+
+model MenuItem {
+  id             String                  @id @default(cuid())
+  name           String
+  description    String
+  price          Int // Integer IDR (Rp28.000 -> 28000)
+  image          String?
+  categoryId     String
+  category       Category                @relation(fields: [categoryId], references: [id])
+  isAvailable    Boolean                 @default(true) // Quick stock toggle (Ada / Habis)
+  isPopular      Boolean                 @default(false)
+  soldCount      Int                     @default(0)
+  isArchived     Boolean                 @default(false) // Soft-delete flag
+  deletedAt      DateTime? // Soft-delete timestamp
+  sortOrder      Int                     @default(0) // Urutan tampilan menu
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  tags           MenuItemTag[]
+  modifierGroups MenuItemModifierGroup[]
+  orderItems     OrderItem[]
+
+  @@index([categoryId])
+  @@index([categoryId, sortOrder])
+  @@index([isAvailable])
+  @@index([isArchived])
+  @@map("menu_items")
+}
+
+model MenuImage {
+  id        String   @id @default(cuid())
+  filename  String   @unique
+  mimeType  String
+  data      Bytes
+  size      Int
+  width     Int
+  height    Int
+  hash      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([hash])
+  @@map("menu_images")
+}
+
+model MenuItemTag {
+  id         String   @id @default(cuid())
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  tagId      String
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([menuItemId, tagId])
+  @@index([tagId])
+  @@map("menu_item_tags")
+}
+
+model ModifierGroup {
+  id          String                  @id @default(cuid())
+  name        String // "Tingkat Kemanisan", "Pilihan Es", "Jenis Susu"
+  isRequired  Boolean                 @default(true)
+  minSelect   Int                     @default(1)
+  maxSelect   Int                     @default(1)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  options     ModifierOption[]
+  menuItemMap MenuItemModifierGroup[]
+
+  @@map("modifier_groups")
+}
+
+model ModifierOption {
+  id                 String              @id @default(cuid())
+  groupId            String
+  group              ModifierGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name               String // "Normal Sweet (100%)", "Oat Milk"
+  price              Int                 @default(0) // Integer IDR tambahan (e.g. 0, 8000)
+  isAvailable        Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  orderItemModifiers OrderItemModifier[]
+
+  @@index([groupId])
+  @@map("modifier_options")
+}
+
+model MenuItemModifierGroup {
+  id         String        @id @default(cuid())
+  menuItemId String
+  menuItem   MenuItem      @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  groupId    String
+  group      ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([menuItemId, groupId])
+  @@index([groupId])
+  @@map("menu_item_modifier_groups")
+}
+
+model QuizQuestion {
+  id          String       @id @default(cuid())
+  stepNumber  Int          @unique // 1, 2, 3
+  title       String // "Bagaimana suasana Anda saat ini?"
+  description String // "Pilih suasana yang paling menggambarkan aktivitas Anda"
+  dimension   TagDimension // MOOD, FLAVOR, FORMAT
+  isActive    Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  options     QuizOption[]
+
+  @@map("quiz_questions")
+}
+
+model QuizOption {
+  id          String          @id @default(cuid())
+  questionId  String
+  question    QuizQuestion    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  label       String // "Santai"
+  description String // "Menikmati waktu luang"
+  icon        String? // "☕"
+  sortOrder   Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  optionTags  QuizOptionTag[]
+
+  @@index([questionId])
+  @@map("quiz_options")
+}
+
+model QuizOptionTag {
+  id        String     @id @default(cuid())
+  optionId  String
+  option    QuizOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  tagId     String
+  tag       Tag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  weight    Int        @default(1) // Flavor=3, Format=2, Mood=1
+  createdAt DateTime   @default(now())
+
+  @@unique([optionId, tagId])
+  @@index([tagId])
+  @@map("quiz_option_tags")
+}
+
+model CravioConfig {
+  id                 String   @id @default(cuid())
+  name               String   @default("Cravio")
+  tagline            String   @default("Your craving, Perfectly Matched")
+  address            String?
+  phone              String?
+  taxRateBps         Int      @default(0) // Basis points (0 = 0%)
+  serviceRateBps     Int      @default(0) // Basis points (0 = 0%)
+  isTaxInclusive     Boolean  @default(false) // Mode inklusif vs eksklusif
+  currency           String   @default("IDR")
+  timezone           String   @default("Asia/Jakarta")
+  openingHours       String?  @default("08:00 - 22:00 WIB")
+  qrisTimeoutMinutes Int      @default(15) // Batas waktu bayar QRIS
+  cashTimeoutMinutes Int      @default(20) // Batas toleransi kasir tunai
+  quizVersion        Int      @default(1) // Versi konfigurasi kuis
+  productionDomain   String?  // Domain produksi permanen (e.g. "https://sela.cravio.id")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("cravio_configs")
+}
+
+model StaffUser {
+  id                  String               @id @default(cuid())
+  username            String               @unique
+  displayName         String
+  role                StaffRole
+  pinHash             String? // Argon2/bcrypt hash untuk Kasir & Barista (4-6 digit)
+  passwordHash        String? // Password hash untuk Admin
+  failedLoginAttempts Int                  @default(0) // Counter kegagalan login untuk lockout persisten
+  lockedUntil         DateTime? // Timestamp batas waktu kunci akun (15 mnt)
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  auditLogs           AuditLog[]
+  manualRefunds       ManualRefundRecord[]
+  printLogs           PrintLog[]
+
+  @@map("staff_users")
+}
+
+model GuestSession {
+  id               String    @id @default(cuid())
+  tableId          String
+  table            Table     @relation(fields: [tableId], references: [id])
+  sessionTokenHash String    @unique // SHA-256 hash token sesi tamu
+  ipAddress        String?
+  userAgent        String?
+  expiresAt        DateTime
+  createdAt        DateTime  @default(now())
+  orders           Order[]
+
+  @@index([sessionTokenHash, expiresAt])
+  @@index([tableId])
+  @@map("guest_sessions")
+}
+
+model Order {
+  id                   String               @id @default(cuid())
+  orderNumber          String               @unique // e.g. ORD-20261028-001
+  orderSecretTokenHash String // SHA-256 hash guest access token
+  capabilityNonce      String? // Nonce untuk derivasi deterministik orderSecretToken
+  quoteId              String? // ID quote yang menjadi dasar kalkulasi pesanan
+  tableId              String
+  table                Table                @relation(fields: [tableId], references: [id])
+  guestSessionId       String?
+  guestSession         GuestSession?        @relation(fields: [guestSessionId], references: [id], onDelete: SetNull)
+  customerNotes        String? // Maksimal 120 karakter
+  subtotalAmount       Int // Subtotal sebelum pajak & service (Integer IDR)
+  taxAmount            Int                  @default(0) // Pajak dalam Integer IDR
+  serviceAmount        Int                  @default(0) // Service dalam Integer IDR
+  totalAmount          Int // Total final (Integer IDR)
+  orderStatus          OrderStatus          @default(QUEUED)
+  paymentStatus        PaymentStatus        @default(UNPAID)
+  paymentMethod        PaymentMethod
+  version              Int                  @default(1) // Optimistic locking version
+  paidAt               DateTime? // Timestamp saat pembayaran terverifikasi
+  cancelledAt          DateTime? // Timestamp jika pesanan dibatalkan
+  completedAt          DateTime? // Timestamp saat pesanan disajikan
+  expiresAt            DateTime? // Batas akhir pembayaran (QRIS / Tunai)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  items                OrderItem[]
+  paymentAttempts      PaymentAttempt[]
+  auditLogs            AuditLog[]
+  manualRefunds        ManualRefundRecord[]
+  printLogs            PrintLog[]
+
+  @@index([orderStatus, paidAt])
+  @@index([paymentStatus, paymentMethod, createdAt])
+  @@index([paymentStatus, expiresAt])
+  @@index([createdAt, orderStatus, paymentStatus])
+  @@index([tableId])
+  @@index([orderNumber])
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String              @id @default(cuid())
+  orderId       String
+  order         Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId    String? // Nullable onDelete SetNull jika menu dihapus di masa depan
+  menuItem      MenuItem?           @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+  nameSnapshot  String // Nama menu saat pesanan dibuat (kekal)
+  priceSnapshot Int // Harga satuan saat pesanan dibuat (kekal)
+  quantity      Int
+  notes         String? // Catatan khusus per baris (maks 100 char)
+  subtotal      Int // (priceSnapshot + modifier total) * quantity
+  modifiers     OrderItemModifier[]
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@map("order_items")
+}
+
+model OrderItemModifier {
+  id            String          @id @default(cuid())
+  orderItemId   String
+  orderItem     OrderItem       @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  optionId      String? // Nullable onDelete SetNull jika opsi dihapus
+  option        ModifierOption? @relation(fields: [optionId], references: [id], onDelete: SetNull)
+  nameSnapshot  String // Nama opsi saat transaksi dibuat (kekal)
+  priceSnapshot Int // Harga tambahan saat transaksi dibuat (kekal)
+
+  @@index([orderItemId])
+  @@index([optionId])
+  @@map("order_item_modifiers")
+}
+
+model PaymentAttempt {
+  id              String         @id @default(cuid())
+  orderId         String
+  order           Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  gateway         PaymentGateway
+  merchantOrderId String?        @unique // SELA-261029-001-P1
+  transactionId   String?        @unique // Gateway reference unik (Midtrans UUID)
+  grossAmount     Int
+  qrisString      String?
+  qrisUrl         String?
+  status          PaymentStatus  @default(PENDING)
+  expiresAt       DateTime
+  rawResponse     String? // Snapshot payload respons gateway (JSON)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([orderId])
+  @@index([status, expiresAt])
+  @@map("payment_attempts")
+}
+
+model IdempotencyRecord {
+  id             String           @id @default(cuid())
+  key            String // Nilai Idempotency-Key
+  scope          String // Rute pemanggilan (misal: "CREATE_ORDER")
+  ownerId        String // guestSessionId
+  requestHash    String // Hash SHA-256 dari request body
+  state          IdempotencyState @default(IN_PROGRESS)
+  lockedUntil    DateTime?
+  orderId        String?
+  responseStatus Int? // HTTP Status code cached
+  responseBody   String? // Response payload cached (JSON string) tanpa secret token
+  expiresAt      DateTime // Masa berlaku cache idempoten (e.g. 24 jam)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([scope, ownerId, key])
+  @@index([expiresAt])
+  @@map("idempotency_records")
+}
+
+model AuditLog {
+  id          String     @id @default(cuid())
+  orderId     String?
+  order       Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  staffUserId String?
+  staffUser   StaffUser? @relation(fields: [staffUserId], references: [id], onDelete: SetNull)
+  action      String // e.g. "CONFIRM_CASH", "TRANSITION_COOKING", "TOGGLE_STOCK"
+  details     String? // Rincian context aksi (JSON text)
+  ipAddress   String?
+  createdAt   DateTime   @default(now())
+
+  @@index([orderId])
+  @@index([staffUserId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+model ManualRefundRecord {
+  id           String       @id @default(cuid())
+  orderId      String
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  staffUserId  String
+  staffUser    StaffUser    @relation(fields: [staffUserId], references: [id], onDelete: Restrict)
+  amount       Int // Nominal refund dalam Integer IDR
+  reason       String // Alasan pembatalan/refund
+  refundMethod RefundMethod @default(MANUAL_CASH)
+  approvedAt   DateTime     @default(now())
+  notes        String?
+  createdAt    DateTime     @default(now())
+
+  @@index([orderId])
+  @@index([staffUserId])
+  @@map("manual_refund_records")
+}
+
+model PrintLog {
+  id           String            @id @default(cuid())
+  orderId      String
+  order        Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  staffUserId  String?
+  staffUser    StaffUser?        @relation(fields: [staffUserId], references: [id], onDelete: SetNull)
+  format       PrintFormat       @default(THERMAL_58MM)
+  target       PrintTarget       @default(BROWSER_DIALOG)
+  documentType PrintDocumentType @default(CUSTOMER_RECEIPT)
+  printedAt    DateTime          @default(now())
+  reprintCount Int               @default(0)
+
+  @@index([orderId, documentType])
+  @@index([orderId])
+  @@map("print_logs")
+}
+
+model OutboxEvent {
+  id            String       @id @default(cuid())
+  channel       String // "KDS", "CUSTOMER_ORDER"
+  aggregateType String // "ORDER", "PAYMENT", "MENU"
+  aggregateId   String // Order ID atau MenuItem ID
+  eventType     String // "ORDER_PAID", "STATUS_UPDATED", "STOCK_TOGGLED"
+  payload       String // Event payload (JSON string)
+  status        OutboxStatus @default(PENDING)
+  retryCount    Int          @default(0)
+  createdAt     DateTime     @default(now())
+  processedAt   DateTime?
+
+  @@index([status, createdAt])
+  @@index([channel, aggregateId])
+  @@map("outbox_events")
+}
+
+model RateLimitRecord {
+  id        String   @id @default(cuid())
+  key       String   @unique // Identifier komposit (misal: "guest:checkout:gsid_xxx" atau "staff:login:ip_xxx")
+  points    Int      @default(1) // Jumlah percobaan dalam jendela waktu aktif
+  expireAt  DateTime // Batas akhir jendela waktu (sliding / fixed window)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expireAt])
+  @@map("rate_limit_records")
+}

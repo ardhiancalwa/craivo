@@ -1,0 +1,66 @@
+name: Cravio CI/CD & Release Verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Code Quality, Strict Verification & Build
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: "development"
+      DATABASE_URL: "postgresql://postgres:dummy@localhost:5432/postgres?schema=public"
+      DIRECT_URL: "postgresql://postgres:dummy@localhost:5432/postgres?schema=public"
+      JWT_SECRET: "ci-dummy-jwt-secret-minimum-32-characters-long-12345678"
+      MIDTRANS_SERVER_KEY: "SB-Mid-server-ci-dummy-test-key"
+      MIDTRANS_CLIENT_KEY: "SB-Mid-client-ci-dummy-test-key"
+      MIDTRANS_IS_PRODUCTION: "false"
+      CRON_SECRET: "ci_cron_secret_minimum_16_characters"
+      BACKUP_ENCRYPTION_KEY: "ci-backup-encryption-key-minimum-32-chars-long"
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      NEXT_PUBLIC_BRAND_NAME: "Cravio"
+      NEXT_PUBLIC_CAFE_NAME: "SELA Artisanal Coffee & Bake"
+      NEXT_PUBLIC_CAFE_SLUG: "sela"
+      NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
+      NEXT_PUBLIC_APP_VERSION: "1.0.0-rc1"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install Dependencies (Frozen Lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate Operational Environment
+        run: pnpm run validate-env
+
+      - name: Generate Prisma Client
+        run: pnpm run db:generate
+
+      - name: ESLint Static Analysis
+        run: pnpm run lint
+
+      - name: TypeScript Strict Typecheck
+        run: pnpm run typecheck
+
+      - name: Run Unit Tests
+        run: pnpm exec vitest run tests/unit
+
+      - name: Build Next.js Application (Release Candidate)
+        run: pnpm run build

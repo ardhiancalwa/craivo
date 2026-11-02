@@ -1,0 +1,1074 @@
+<!DOCTYPE html><html class="scroll-smooth" lang="id"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Smart QR Menu — Sistem Pemesanan &amp; Rekomendasi Meja Kafe</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Plus+Jakarta+Sans:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          sand: {
+            50: '#FDFBF7',
+            100: '#F7F4EE',
+            200: '#EFEAE0',
+            300: '#E3DCce',
+            400: '#C8BEAF',
+            800: '#2A2621',
+            900: '#1A1815',
+          },
+          charcoal: {
+            950: '#111110',
+            900: '#181816',
+            850: '#20201E',
+            800: '#2B2B28',
+            700: '#3D3D39',
+          },
+          terracotta: {
+            500: '#C25E2B',
+            600: '#A94E20',
+          }
+        },
+        fontFamily: {
+          serif: ['"Instrument Serif"', 'Georgia', 'serif'],
+          sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+        boxShadow: {
+          'subtle': '0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03)',
+          'frame': '0 0 0 1px rgba(27, 24, 21, 0.08), 0 12px 36px -8px rgba(27, 24, 21, 0.06)',
+          'card': '0 0 0 1px rgba(27, 24, 21, 0.06), 0 8px 24px -4px rgba(27, 24, 21, 0.04)',
+          'glow': '0 0 60px -12px rgba(194, 94, 43, 0.15)',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body {
+    background-color: #FBF9F5;
+    color: #1A1815;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .font-editorial {
+    font-family: 'Instrument Serif', Georgia, serif;
+    letter-spacing: -0.02em;
+  }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .grid-pattern {
+    background-size: 40px 40px;
+    background-image: 
+      linear-gradient(to right, rgba(26, 24, 21, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(26, 24, 21, 0.03) 1px, transparent 1px);
+  }
+</style>
+</head>
+<body class="selection:bg-sand-300 selection:text-charcoal-950">
+<!-- Top Editorial Micro-banner -->
+<div class="bg-charcoal-950 text-sand-200 text-[11px] font-medium tracking-wide py-2 px-4 border-b border-charcoal-800 text-center">
+<div class="max-w-7xl mx-auto flex items-center justify-center gap-3">
+<span class="inline-flex items-center gap-1.5 text-sand-300">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+      Sistem Pemesanan Mandiri Meja Kafe &amp; Resto B2B
+    </span>
+<span class="text-charcoal-700 hidden sm:inline">|</span>
+<span class="text-sand-400 font-normal hidden sm:inline">Demo interaktif langsung tersedia di halaman ini</span>
+</div>
+</div>
+<!-- Minimalist Header / Navbar -->
+<header class="sticky top-0 z-50 bg-[#FBF9F5]/90 backdrop-blur-xl border-b border-sand-200/80 transition-all">
+<div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+<div class="flex items-center gap-8">
+<a class="flex items-center gap-2.5 group" href="#hero">
+<span class="w-6 h-6 rounded-md bg-charcoal-950 text-[#FBF9F5] font-serif text-sm flex items-center justify-center italic font-bold">s</span>
+<span class="text-[15px] font-semibold tracking-tight text-charcoal-950">Smart QR Menu</span>
+</a>
+<!-- Desktop Nav -->
+<nav class="hidden md:flex items-center gap-6 text-[13px] font-medium text-stone-600">
+<a class="hover:text-charcoal-950 transition-colors" href="#cara-kerja">Cara Kerja</a>
+<a class="hover:text-charcoal-950 transition-colors" href="#demo-kuis">Simulasi Kuis</a>
+<a class="hover:text-charcoal-950 transition-colors" href="#operasional">Kasir &amp; Dapur</a>
+<a class="hover:text-charcoal-950 transition-colors" href="#kelola-menu">Pengelolaan Kafe</a>
+<a class="hover:text-charcoal-950 transition-colors" href="#pembayaran">Pembayaran</a>
+<a class="hover:text-charcoal-950 transition-colors" href="#faq">FAQ</a>
+</nav>
+</div>
+<div class="flex items-center gap-3">
+<a class="hidden sm:inline-flex text-[13px] font-medium text-stone-700 hover:text-charcoal-950 px-3 py-1.5 transition-colors" href="#demo-kuis">
+        Coba Demo
+      </a>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-charcoal-950 hover:bg-charcoal-800 text-[13px] font-medium text-white transition-all shadow-sm" onclick="openConsultationModal()">
+<span class="">Diskusikan untuk Kafe Saya</span>
+<svg class="w-3.5 h-3.5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+</div>
+</header>
+<main class="relative overflow-hidden">
+<!-- Subtle ambient glow background inspired by Forge template -->
+<div class="absolute top-0 inset-x-0 h-[640px] pointer-events-none opacity-40 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(194,94,43,0.12),transparent_70%)]"></div>
+<!-- HERO SECTION -->
+<section class="relative pt-20 pb-16 md:pt-28 md:pb-24" id="hero">
+<div class="max-w-4xl mx-auto px-6 text-center space-y-6">
+<!-- Micro category badge -->
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sand-100 border border-sand-200 text-[12px] font-medium text-stone-700 shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-terracotta-500"></span>
+        Platform Pemesanan Mandiri Meja Kafe &amp; Restoran
+      </div>
+<!-- Main Editorial Headline -->
+<h1 class="font-editorial text-5xl sm:text-6xl md:text-7xl font-normal tracking-tight text-charcoal-950 leading-[1.05]">
+        Dari scan meja sampai <br class="hidden sm:inline">
+<span class="italic font-normal">pesanan siap di tangan.</span>
+</h1>
+<!-- Editorial Subheadline -->
+<p class="max-w-2xl mx-auto text-base sm:text-lg text-stone-600 font-normal leading-relaxed">
+        Menu digital, rekomendasi sesuai selera, dan alur pesanan yang terhubung ke kasir serta dapur tanpa antrean bertumpuk.
+      </p>
+<!-- Action Row -->
+<div class="pt-2 flex flex-wrap items-center justify-center gap-3">
+<a class="px-5 py-2.5 rounded-full bg-charcoal-950 hover:bg-charcoal-800 text-white text-[13px] font-medium shadow-sm transition-all flex items-center gap-2" href="#demo-kuis">
+<span class="">Coba Demo Interaktif</span>
+<svg class="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+<button class="px-5 py-2.5 rounded-full bg-transparent hover:bg-sand-100 border border-sand-300 text-charcoal-950 text-[13px] font-medium transition-all" onclick="openConsultationModal()">
+          Diskusikan untuk Kafe Saya
+        </button>
+</div>
+<!-- Technical Guarantees Bar (Factual) -->
+<div class="pt-8 max-w-lg mx-auto grid grid-cols-3 divide-x divide-sand-200 text-center text-xs">
+<div class="px-2">
+<span class="block text-stone-500 text-[11px]">Platform</span>
+<span class="font-semibold text-charcoal-950 text-[12px]">Web Tanpa Install</span>
+</div>
+<div class="px-2">
+<span class="block text-stone-500 text-[11px]">Metode Bayar</span>
+<span class="font-semibold text-charcoal-950 text-[12px]">QRIS &amp; Tunai Kasir</span>
+</div>
+<div class="px-2">
+<span class="block text-stone-500 text-[11px]">Operasional</span>
+<span class="font-semibold text-charcoal-950 text-[12px]">KDS &amp; Tiket ESC/POS</span>
+</div>
+</div>
+</div>
+<!-- HIGH-CRAFT PRODUCT PREVIEW FRAME (Forge style clean interface mockup) -->
+<div class="max-w-5xl mx-auto px-6 mt-14">
+<div class="relative rounded-2xl bg-white border border-stone-200/80 shadow-frame p-2 sm:p-3 overflow-hidden">
+<!-- Window titlebar -->
+<div class="flex items-center justify-between px-3 py-2 border-b border-sand-200/70 mb-3 text-[11px] text-stone-500 font-mono">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-stone-300"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-stone-300"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-stone-300"></span>
+<span class="ml-2 font-sans font-medium text-stone-700">Tampilan Pengguna Meja — Kafe SELA</span>
+</div>
+<span class="bg-sand-100 text-stone-700 px-2 py-0.5 rounded text-[10px] border border-sand-200">Meja 07 · Sesi Aktif</span>
+</div>
+<!-- Inner Content: Realistic customer experience UI -->
+<div class="bg-sand-50 rounded-xl p-4 sm:p-6 border border-sand-100">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+<!-- Left: Ordering Interface -->
+<div class="md:col-span-8 space-y-4">
+<!-- Banner Recommendation -->
+<div class="p-3.5 rounded-xl bg-white border border-sand-200/80 flex items-start justify-between gap-4 shadow-subtle">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900">Kurasi Barista</span>
+<span class="text-xs font-semibold text-charcoal-950">Racikan Dingin &amp; Segar</span>
+</div>
+<p class="text-xs text-stone-600">Iced Americano &amp; Matcha Latte disarankan untuk suasana santai sore hari.</p>
+</div>
+<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">98% Cocok</span>
+</div>
+<!-- Product Grid -->
+<div class="grid grid-cols-2 gap-3">
+<!-- Item 1 -->
+<div class="p-3 rounded-xl bg-white border border-sand-200/80 flex flex-col justify-between shadow-subtle">
+<div>
+<div class="h-28 rounded-lg bg-sand-100 flex items-center justify-center relative overflow-hidden mb-2.5 border border-sand-200/50">
+<div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+<span class="absolute top-2 left-2 bg-charcoal-950 text-white text-[9px] font-medium px-1.5 py-0.5 rounded">Signature</span>
+<span class="font-serif italic text-stone-400 text-xl">Iced Americano</span>
+</div>
+<div class="font-semibold text-xs text-charcoal-950">Iced Americano</div>
+<div class="text-[11px] text-stone-500 mt-0.5">Espresso ganda &amp; air dingin segar</div>
+</div>
+<div class="flex items-center justify-between mt-3 pt-2 border-t border-sand-100">
+<span class="text-xs font-semibold tabular text-charcoal-950">Rp24.000</span>
+<span class="w-6 h-6 rounded-md bg-charcoal-950 text-white flex items-center justify-center text-xs font-bold hover:bg-charcoal-800 cursor-pointer">+</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="p-3 rounded-xl bg-white border border-sand-200/80 flex flex-col justify-between shadow-subtle">
+<div>
+<div class="h-28 rounded-lg bg-sand-100 flex items-center justify-center relative overflow-hidden mb-2.5 border border-sand-200/50">
+<div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+<span class="absolute top-2 left-2 bg-terracotta-500 text-white text-[9px] font-medium px-1.5 py-0.5 rounded">Favorit</span>
+<span class="font-serif italic text-stone-400 text-xl">Kopi Susu Aren</span>
+</div>
+<div class="font-semibold text-xs text-charcoal-950">Kopi Susu Aren SELA</div>
+<div class="text-[11px] text-stone-500 mt-0.5">Espresso &amp; gula aren organik</div>
+</div>
+<div class="flex items-center justify-between mt-3 pt-2 border-t border-sand-100">
+<span class="text-xs font-semibold tabular text-charcoal-950">Rp28.000</span>
+<div class="flex items-center gap-2 bg-sand-100 px-2 py-0.5 rounded border border-sand-200 text-xs font-semibold">
+<span class="">-</span>
+<span class="text-terracotta-600">1</span>
+<span class="">+</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Real-time Order Cart & Tracking Preview -->
+<div class="md:col-span-4 space-y-3">
+<div class="p-4 rounded-xl bg-white border border-sand-200/80 shadow-subtle space-y-3">
+<div class="flex items-center justify-between border-b border-sand-100 pb-2.5">
+<span class="text-xs font-bold uppercase tracking-wider text-stone-500">Ringkasan Meja 07</span>
+<span class="text-[11px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Terhubung</span>
+</div>
+<div class="space-y-2 text-xs">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-medium text-charcoal-950">1x Kopi Susu Aren</span>
+<p class="text-[10px] text-stone-500">Less sweet · Susu oat</p>
+</div>
+<span class="tabular font-medium text-charcoal-950">Rp28.000</span>
+</div>
+<div class="flex justify-between items-start">
+<div>
+<span class="font-medium text-charcoal-950">1x Iced Americano</span>
+<p class="text-[10px] text-stone-500">Normal ice · Polos</p>
+</div>
+<span class="tabular font-medium text-charcoal-950">Rp24.000</span>
+</div>
+</div>
+<div class="pt-2 border-t border-sand-100 flex items-center justify-between">
+<span class="text-xs font-semibold text-stone-600">Total (2 item)</span>
+<span class="text-sm font-bold tabular text-charcoal-950">Rp52.000</span>
+</div>
+<div class="pt-2">
+<div class="p-2.5 rounded-lg bg-sand-100/80 border border-sand-200 space-y-1">
+<div class="flex items-center justify-between text-[11px]">
+<span class="font-medium text-stone-700">Status Pesanan:</span>
+<span class="font-semibold text-terracotta-600">Sedang Dibuat</span>
+</div>
+<div class="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
+<div class="bg-terracotta-500 h-full w-2/3 rounded-full"></div>
+</div>
+<p class="text-[10px] text-stone-500 pt-0.5">Barista sedang menyiapkan racikan Anda.</p>
+</div>
+</div>
+</div>
+<!-- Micro guarantee -->
+<div class="p-3 rounded-lg bg-white/70 border border-sand-200 text-[11px] text-stone-500 space-y-1">
+<span class="font-semibold text-charcoal-950 block">Mencegah Pesanan Salah Meja</span>
+                QR token unik dienkripsi per nomor meja sehingga pesanan tidak tertukar.
+              </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- CUSTOMER JOURNEY: 5 STEPS -->
+<section class="py-20 md:py-28 border-t border-sand-200 bg-sand-50/50" id="cara-kerja">
+<div class="max-w-6xl mx-auto px-6">
+<div class="max-w-2xl mb-14 space-y-3">
+<span class="text-xs font-semibold uppercase tracking-widest text-terracotta-500">Alur Pengalaman Pelanggan</span>
+<h2 class="font-editorial text-3xl sm:text-4xl md:text-5xl font-normal text-charcoal-950">
+          Pelanggan memesan langsung dari meja.
+        </h2>
+<p class="text-sm sm:text-base text-stone-600 leading-relaxed font-normal">
+          Tanpa perlu download aplikasi dari store atau mendaftar akun rumit. Cukup arahkan kamera ponsel ke QR meja dan mulai memesan dalam hitungan detik.
+        </p>
+</div>
+<!-- 5 Clean Editorial Grid Cards -->
+<div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+<!-- Step 1 -->
+<div class="p-5 rounded-2xl bg-white border border-sand-200 shadow-subtle flex flex-col justify-between hover:border-charcoal-800 transition-all group">
+<div>
+<span class="font-mono text-xs font-semibold text-stone-400 group-hover:text-charcoal-950 transition-colors">01</span>
+<h3 class="font-semibold text-sm text-charcoal-950 mt-3 mb-1.5">Scan QR Meja</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+              Kamera ponsel memindai akrilik meja. Sistem langsung mengenali nomor meja tanpa input manual.
+            </p>
+</div>
+<div class="mt-6 pt-3 border-t border-sand-100 text-[10px] font-mono text-stone-400">
+            Meja terdeteksi
+          </div>
+</div>
+<!-- Step 2 -->
+<div class="p-5 rounded-2xl bg-white border border-sand-200 shadow-subtle flex flex-col justify-between hover:border-charcoal-800 transition-all group">
+<div>
+<span class="font-mono text-xs font-semibold text-terracotta-500">02</span>
+<h3 class="font-semibold text-sm text-charcoal-950 mt-3 mb-1.5">Isi / Lewati Kuis</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+              3 pertanyaan selera (suasana, rasa, suhu). Pelanggan juga bebas langsung melewati kuis ke menu lengkap.
+            </p>
+</div>
+<div class="mt-6 pt-3 border-t border-sand-100 text-[10px] font-mono text-stone-400">
+            Opsional &amp; 30 detik
+          </div>
+</div>
+<!-- Step 3 -->
+<div class="p-5 rounded-2xl bg-white border border-sand-200 shadow-subtle flex flex-col justify-between hover:border-charcoal-800 transition-all group">
+<div>
+<span class="font-mono text-xs font-semibold text-stone-400 group-hover:text-charcoal-950 transition-colors">03</span>
+<h3 class="font-semibold text-sm text-charcoal-950 mt-3 mb-1.5">Pilih &amp; Modifikasi</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+              Katalog grid 2 kolom dengan foto jelas, level manis/es, catatan kustom barista, dan badge stok real-time.
+            </p>
+</div>
+<div class="mt-6 pt-3 border-t border-sand-100 text-[10px] font-mono text-stone-400">
+            Modifier terperinci
+          </div>
+</div>
+<!-- Step 4 -->
+<div class="p-5 rounded-2xl bg-white border border-sand-200 shadow-subtle flex flex-col justify-between hover:border-charcoal-800 transition-all group">
+<div>
+<span class="font-mono text-xs font-semibold text-stone-400 group-hover:text-charcoal-950 transition-colors">04</span>
+<h3 class="font-semibold text-sm text-charcoal-950 mt-3 mb-1.5">QRIS / Tunai Kasir</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+              Bayar mandiri via QRIS dinamis ber-timer, atau pilih bayar tunai di meja/kasir dengan verifikasi kasir.
+            </p>
+</div>
+<div class="mt-6 pt-3 border-t border-sand-100 text-[10px] font-mono text-stone-400">
+            2 Metode fleksibel
+          </div>
+</div>
+<!-- Step 5 -->
+<div class="p-5 rounded-2xl bg-white border border-sand-200 shadow-subtle flex flex-col justify-between hover:border-charcoal-800 transition-all group">
+<div>
+<span class="font-mono text-xs font-semibold text-stone-400 group-hover:text-charcoal-950 transition-colors">05</span>
+<h3 class="font-semibold text-sm text-charcoal-950 mt-3 mb-1.5">Pantau Progres</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+              Pelacak langsung di layar: <em>Diterima → Dibuat → Siap Saji</em> tanpa perlu memanggil staf berulang kali.
+            </p>
+</div>
+<div class="mt-6 pt-3 border-t border-sand-100 text-[10px] font-mono text-stone-400">
+            Tenang di meja
+          </div>
+</div>
+</div>
+</div>
+</section>
+<!-- INTERACTIVE QUIZ DEMONSTRATION SECTION -->
+<section class="py-20 md:py-28 border-t border-sand-200 bg-white" id="demo-kuis">
+<div class="max-w-6xl mx-auto px-6">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+<!-- Left: Copy & Deterministic Matching Concept -->
+<div class="lg:col-span-5 space-y-5">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sand-100 border border-sand-200 text-xs font-semibold text-charcoal-950">
+<span class="w-2 h-2 rounded-full bg-terracotta-500"></span>
+            Deterministic Preference Matching
+          </div>
+<h2 class="font-editorial text-3xl sm:text-4xl md:text-5xl font-normal text-charcoal-950 leading-tight">
+            Bantu pelanggan menemukan <br class="hidden sm:inline">
+<span class="italic font-normal">menu yang tepat.</span>
+</h2>
+<p class="text-sm sm:text-base text-stone-600 leading-relaxed font-normal">
+            Banyak pelanggan ragu atau menghabiskan 5–10 menit hanya untuk memilih minuman. Kuis 30 detik ini mencocokkan kriteria rasa, suasana, dan suhu penyajian langsung dengan atribut katalog kafe Anda.
+          </p>
+<div class="p-4 rounded-xl bg-sand-50 border border-sand-200 text-xs space-y-2">
+<div class="flex items-center gap-2 font-semibold text-charcoal-950">
+<svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span class="">Berbasis Atribut Nyata (Bukan AI Fiktif)</span>
+</div>
+<p class="text-stone-600">Menggunakan pencocokan tag menu terstruktur dari database dapur Anda tanpa asumsi atau diagnosis kepribadian fiktif.</p>
+<div class="text-[11px] font-mono text-stone-500 pt-1">Status modul: Aktif &amp; dapat disesuaikan per kategori</div>
+</div>
+</div>
+<!-- Right: Interactive Quiz Widget -->
+<div class="lg:col-span-7">
+<div class="p-6 sm:p-8 rounded-2xl bg-sand-50 border border-sand-200 shadow-frame space-y-6"><!-- Header Widget -->
+<div class="flex items-center justify-between border-b border-sand-200 pb-4">
+  <div>
+    <span class="text-xs font-bold uppercase tracking-wider text-stone-500">Widget Demonstrasi</span>
+    <h3 class="text-sm font-semibold text-charcoal-950">Simulasi Kuis &amp; Rekomendasi Meja 07</h3>
+  </div>
+  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white text-stone-700 border border-sand-200 shadow-sm">
+    Interaktif • Kafe SELA
+  </span>
+</div>
+
+<!-- 3 Pertanyaan Kuesioner Interaktif -->
+<div class="space-y-4">
+  <!-- Q1: Suasana (Kuesioner 1/3) -->
+  <div>
+    <div class="flex items-center justify-between mb-2">
+      <label class="text-[11px] font-bold uppercase tracking-wider text-stone-500">1. Lagi ingin menikmati waktu seperti apa?</label>
+      <span class="text-[10px] font-mono text-terracotta-500 font-semibold">Langkah 1/3</span>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="group-suasana">
+      <button type="button" class="kuis-btn active py-2 px-2.5 rounded-lg border text-xs font-semibold text-center transition-all bg-charcoal-950 text-white border-charcoal-950" data-group="suasana" data-val="santai" onclick="setKuisVal('suasana', 'santai')">
+        Santai
+      </button>
+      <button type="button" class="kuis-btn py-2 px-2.5 rounded-lg border text-xs font-semibold text-center transition-all bg-white text-stone-700 border-sand-200 hover:bg-stone-50" data-group="suasana" data-val="fokus" onclick="setKuisVal('suasana', 'fokus')">
+        Menemani fokus
+      </button>
+      <button type="button" class="kuis-btn py-2 px-2.5 rounded-lg border text-xs font-semibold text-center transition-all bg-white text-stone-700 border-sand-200 hover:bg-stone-50" data-group="suasana" data-val="eksplorasi" onclick="setKuisVal('suasana', 'eksplorasi')">
+        Mencoba sesuatu yang baru
+      </button>
+      <button type="button" class="kuis-btn py-2 px-2.5 rounded-lg border text-xs font-semibold text-center transition-all bg-white text-stone-700 border-sand-200 hover:bg-stone-50" data-group="suasana" data-val="netral" onclick="setKuisVal('suasana', 'netral')">
+        Tidak ada preferensi
+      </button>
+    </div>
+  </div>
+
+  <!-- Q2: Rasa (Kuesioner 2/3) -->
+  <div>
+    <div class="flex items-center justify-between mb-2">
+      <label class="text-[11px] font-bold uppercase tracking-wider text-stone-500">2. Rasa apa yang sedang kamu inginkan?</label>
+      <span class="text-[10px] font-mono text-terracotta-500 font-semibold">Langkah 2/3</span>
+    </div>
+    <div class="grid grid-cols-3 sm:grid-cols-5 gap-1.5" id="group-rasa">
+      <button type="button" class="kuis-btn py-2 px-2 rounded-lg border text-xs font-semibold text-center transition-all bg-white text-stone-700 border-sand-200 hover:bg-stone-50" data-group="rasa" data-val="manis" onclick="setKuisVal('rasa', 'manis')">
+        Manis
+      </button>
+      <button type="button" class="kuis-btn py-2 px-2 rounded-lg border text-xs font-semibold text-center transition-all bg-white text-stone-700 border-sand-200 hover:bg-stone-50" data-group="rasa" data-val="gurih" onclick="setKuisVal('rasa', 'gurih')">
+        Gurih
+      </button>
+      <button type="button" class="kuis-btn active py-2 px-2 rounded-lg border text-xs font-semibold text-center transition-all bg-charcoal-950 text-white border-charcoal-950" data-group="rasa" data-val="segar" onclick="setKuisVal('rasa', 'segar')">
+        Segar
+      </button>
+      <button type="button" class="kuis-btn py-2 px-2 rounded-lg border text-xs font-semibold text-center transition-all bg-white text-stone-700 border-sand-200 hover:bg-stone-50" data-group="rasa" data-val="pahit" onclick="setKuisVal('rasa', 'pahit')">
+        Pahit
+      </button>
+      <button type="button" class="kuis-btn py-2 px-2 rounded-lg border text-xs font-semibold text-center transition-all bg-white text-stone-700 border-sand-200 hover:bg-stone-50 col-span-2 sm:col-span-1" data-group="rasa" data-val="bebas-rasa" onclick="setKuisVal('rasa', 'bebas-rasa')">
+        Tidak ada preferensi
+      </button>
+    </div>
+  </div>
+
+  <!-- Q3: Suhu (Kuesioner 3/3) -->
+  <div>
+    <div class="flex items-center justify-between mb-2">
+      <label class="text-[11px] font-bold uppercase tracking-wider text-stone-500">3. Lebih suka disajikan seperti apa?</label>
+      <span class="text-[10px] font-mono text-terracotta-500 font-semibold">Langkah 3/3</span>
+    </div>
+    <div class="grid grid-cols-3 gap-2" id="group-suhu">
+      <button type="button" class="kuis-btn py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all bg-white text-stone-700 border-sand-200 hover:bg-stone-50" data-group="suhu" data-val="hangat" onclick="setKuisVal('suhu', 'hangat')">
+        Hangat
+      </button>
+      <button type="button" class="kuis-btn active py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all bg-charcoal-950 text-white border-charcoal-950 relative" data-group="suhu" data-val="dingin" onclick="setKuisVal('suhu', 'dingin')">
+        <span class="">Dingin</span>
+        <span class="block text-[9px] font-normal text-amber-300">Favorit Meja 07</span>
+      </button>
+      <button type="button" class="kuis-btn py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all bg-white text-stone-700 border-sand-200 hover:bg-stone-50" data-group="suhu" data-val="bebas" onclick="setKuisVal('suhu', 'bebas')">
+        Bebas
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Card Hasil Rekomendasi Terpilih (Sesuai Layar Rekomendasi Meja 07) -->
+<div class="p-4 sm:p-5 rounded-xl bg-white border border-sand-200 shadow-subtle space-y-3.5" id="demo-result-card">
+  <!-- Chips Preferensi & Match Score -->
+  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-sand-100 pb-3">
+    <div class="flex flex-wrap items-center gap-1.5" id="demo-result-tags">
+      <span class="text-[10px] font-medium bg-sand-100 text-stone-700 px-2 py-0.5 rounded-full flex items-center gap-1 border border-sand-200/60">
+        <span class="w-1.5 h-1.5 rounded-full bg-terracotta-500"></span> Santai
+      </span>
+      <span class="text-[10px] font-medium bg-sand-100 text-stone-700 px-2 py-0.5 rounded-full flex items-center gap-1 border border-sand-200/60">
+        <span class="w-1.5 h-1.5 rounded-full bg-terracotta-500"></span> Segar
+      </span>
+      <span class="text-[10px] font-medium bg-sand-100 text-stone-700 px-2 py-0.5 rounded-full flex items-center gap-1 border border-sand-200/60">
+        <span class="w-1.5 h-1.5 rounded-full bg-terracotta-500"></span> Dingin
+      </span>
+    </div>
+    <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200" id="demo-result-match">
+      98% Cocok
+    </span>
+  </div>
+
+  <!-- Headline & Deskripsi Kurasi Barista -->
+  <div class="space-y-1">
+    <span class="text-[10px] font-bold uppercase tracking-wider text-terracotta-600 block">Pilihan Barista Meja 07</span>
+    <h4 class="font-headline-sm text-sm font-semibold text-charcoal-950" id="demo-result-title">Racikan Santai &amp; Dingin</h4>
+    <p class="text-xs text-stone-600 leading-relaxed" id="demo-result-reason">
+      Berdasarkan preferensimu, barista SELA menyarankan seduhan dingin beraroma bersih untuk menemani jeda soremu hari ini.
+    </p>
+  </div>
+
+  <!-- 2 Kartu Menu Rekomendasi Nyata -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1" id="demo-result-items">
+    <!-- Item 1: Iced Americano -->
+    <div class="p-3 rounded-lg bg-sand-50/80 border border-sand-200/80 flex flex-col justify-between space-y-2">
+      <div>
+        <div class="flex items-start justify-between gap-2">
+          <div class="space-y-0.5">
+            <div class="flex items-center gap-1.5">
+              <span class="font-semibold text-xs text-charcoal-950">Iced Americano</span>
+              <span class="text-[9px] font-medium px-1.5 py-0.2 bg-charcoal-950 text-white rounded">Signature</span>
+            </div>
+            <p class="text-[11px] text-stone-500 leading-snug">
+              Espresso ganda &amp; air dingin dengan karakter kopi tegas dan acidity bersih menyegarkan.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between pt-1.5 border-t border-sand-200/50">
+        <span class="text-[10px] text-stone-500 font-mono">Tingkat Manis: Polos</span>
+        <span class="text-xs font-bold tabular text-terracotta-600">Rp24.000</span>
+      </div>
+    </div>
+
+    <!-- Item 2: Matcha Latte Dingin -->
+    <div class="p-3 rounded-lg bg-sand-50/80 border border-sand-200/80 flex flex-col justify-between space-y-2">
+      <div>
+        <div class="flex items-start justify-between gap-2">
+          <div class="space-y-0.5">
+            <div class="flex items-center gap-1.5">
+              <span class="font-semibold text-xs text-charcoal-950">Matcha Latte Dingin</span>
+            </div>
+            <p class="text-[11px] text-stone-500 leading-snug">
+              Uji matcha otentik disajikan dingin lembut untuk rehat santai tanpa kafein berlebih.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between pt-1.5 border-t border-sand-200/50">
+        <span class="text-[10px] text-stone-500 font-mono">Oat / Fresh Milk</span>
+        <span class="text-xs font-bold tabular text-terracotta-600">Rp32.000</span>
+      </div>
+    </div>
+  </div>
+</div></div>
+</div>
+</div>
+</div>
+</section>
+<!-- KITCHEN DISPLAY & CASHIER OPERATIONS SECTION (High-Contrast KDS Craft) -->
+<section class="py-20 md:py-28 border-t border-sand-200 bg-[#141311] text-sand-100" id="operasional">
+<div class="max-w-6xl mx-auto px-6">
+<div class="max-w-2xl mb-14 space-y-3">
+<span class="text-xs font-semibold uppercase tracking-widest text-terracotta-500">Visibilitas Barista &amp; Dapur</span>
+<h2 class="font-editorial text-3xl sm:text-4xl md:text-5xl font-normal text-white">
+          Pesanan terlihat jelas oleh tim yang menyiapkannya.
+        </h2>
+<p class="text-sm sm:text-base text-stone-400 leading-relaxed font-normal">
+          Setiap pesanan yang disubmit oleh pelanggan langsung diteruskan ke Kitchen Display System (KDS) dan dashboard kasir secara sinkron tanpa kertas hilang.
+        </p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- 3 Feature Points -->
+<div class="lg:col-span-4 space-y-3">
+<div class="p-5 rounded-2xl bg-[#1C1A18] border border-charcoal-800 space-y-2">
+<span class="font-mono text-xs text-terracotta-500">01</span>
+<h3 class="font-semibold text-sm text-white">Tiket Meja Kontras Tinggi</h3>
+<p class="text-xs text-stone-400 leading-relaxed">
+              Nomor meja tampil besar mencolok. Modifier dan catatan khusus (seperti <em>"less sugar"</em> atau <em>"oat milk"</em>) diberi highlight amber agar tidak terlewat.
+            </p>
+</div>
+<div class="p-5 rounded-2xl bg-[#1C1A18] border border-charcoal-800 space-y-2">
+<span class="font-mono text-xs text-terracotta-500">02</span>
+<h3 class="font-semibold text-sm text-white">Notifikasi Suara Shift</h3>
+<p class="text-xs text-stone-400 leading-relaxed">
+              Lonceng audio chime berdentang otomatis saat ada pesanan baru masuk, membantu staf tetap fokus meracik kopi tanpa menatap layar terus-menerus.
+            </p>
+</div>
+<div class="p-5 rounded-2xl bg-[#1C1A18] border border-charcoal-800 space-y-2">
+<span class="font-mono text-xs text-terracotta-500">03</span>
+<h3 class="font-semibold text-sm text-white">Pembaruan Status 4 Tahap</h3>
+<p class="text-xs text-stone-400 leading-relaxed">
+              Satu ketukan di layar dapur mengubah status: <em>Diterima → Dibuat → Siap Saji → Selesai</em>, seketika terefleksi di ponsel pelanggan.
+            </p>
+</div>
+</div>
+<!-- Realistic KDS Display Container -->
+<div class="lg:col-span-8">
+<div class="rounded-2xl bg-[#181715] border border-charcoal-700/80 p-5 sm:p-6 shadow-2xl space-y-5">
+<!-- Header bar of KDS screen -->
+<div class="flex flex-wrap items-center justify-between pb-4 border-b border-charcoal-800 gap-3">
+<div class="flex items-center gap-2.5">
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+<div>
+<h4 class="text-xs font-semibold tracking-wider text-white uppercase">KITCHEN DISPLAY SYSTEM — BAR &amp; DAPUR</h4>
+<p class="text-[10px] text-stone-400">Antrean Aktif: 2 Pesanan Berjalan</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[11px] bg-charcoal-800 text-stone-300 px-2 py-0.5 rounded border border-charcoal-700 font-mono">Audio Chime: Aktif</span>
+<span class="text-[11px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 font-semibold">Online</span>
+</div>
+</div>
+<!-- 2 High contrast tickets -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<!-- Ticket 1 (Sedang Dibuat) -->
+<div class="rounded-xl bg-[#201E1B] border-2 border-amber-600/70 p-4 space-y-3">
+<div class="flex items-center justify-between border-b border-charcoal-700 pb-2.5">
+<div>
+<span class="text-[10px] font-mono text-stone-400">TIKET #042</span>
+<h5 class="text-xl font-bold text-white tracking-tight">MEJA 07</h5>
+</div>
+<div class="text-right">
+<span class="text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded">Sedang Dibuat</span>
+<p class="text-[10px] text-stone-400 font-mono mt-1">04:12 m lalu</p>
+</div>
+</div>
+<div class="space-y-2 text-xs">
+<div class="border-b border-charcoal-800 pb-2">
+<div class="flex justify-between font-semibold text-white">
+<span class="">1x Iced Americano</span>
+<span class="text-stone-400">Bar</span>
+</div>
+<span class="text-[11px] text-amber-300 bg-amber-950/60 px-1.5 py-0.5 rounded inline-block mt-0.5">Catatan: Polos tanpa gula, es reguler</span>
+</div>
+<div class="border-b border-charcoal-800 pb-2">
+<div class="flex justify-between font-semibold text-white">
+<span class="">1x Kopi Susu Aren</span>
+<span class="text-stone-400">Bar</span>
+</div>
+<span class="text-[11px] text-amber-300 bg-amber-950/60 px-1.5 py-0.5 rounded inline-block mt-0.5">Modifier: Susu oat, less sweet</span>
+</div>
+</div>
+<div class="pt-2 flex items-center justify-between">
+<span class="text-[10px] text-stone-400 font-mono">QRIS (Lunas)</span>
+<button class="bg-terracotta-500 hover:bg-terracotta-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
+                    Tandai Siap Saji →
+                  </button>
+</div>
+</div>
+<!-- Ticket 2 (Diterima) -->
+<div class="rounded-xl bg-[#201E1B] border border-charcoal-700 p-4 space-y-3">
+<div class="flex items-center justify-between border-b border-charcoal-700 pb-2.5">
+<div>
+<span class="text-[10px] font-mono text-stone-400">TIKET #043</span>
+<h5 class="text-xl font-bold text-white tracking-tight">MEJA 03</h5>
+</div>
+<div class="text-right">
+<span class="text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded">Diterima</span>
+<p class="text-[10px] text-stone-400 font-mono mt-1">01:05 m lalu</p>
+</div>
+</div>
+<div class="space-y-2 text-xs">
+<div class="border-b border-charcoal-800 pb-2">
+<div class="flex justify-between font-semibold text-white">
+<span class="">2x Butter Croissant</span>
+<span class="text-stone-400">Pastry</span>
+</div>
+<p class="text-[11px] text-stone-300 mt-0.5">Hangatkan sebentar</p>
+</div>
+<div class="border-b border-charcoal-800 pb-2">
+<div class="flex justify-between font-semibold text-white">
+<span class="">1x Matcha Latte</span>
+<span class="text-stone-400">Bar</span>
+</div>
+<p class="text-[11px] text-stone-300 mt-0.5">Hot, oat milk</p>
+</div>
+</div>
+<div class="pt-2 flex items-center justify-between">
+<span class="text-[10px] text-stone-400 font-mono">Menunggu Kasir (Tunai)</span>
+<button class="bg-charcoal-700 hover:bg-charcoal-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
+                    Mulai Buat
+                  </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- CAFE OWNER MANAGEMENT & QR TABLE GENERATOR SECTION -->
+<section class="py-20 md:py-28 border-t border-sand-200 bg-sand-50/50" id="kelola-menu">
+<div class="max-w-6xl mx-auto px-6">
+<div class="max-w-2xl mb-14 space-y-3">
+<span class="text-xs font-semibold uppercase tracking-widest text-terracotta-500">Kontrol Menu &amp; Operasional</span>
+<h2 class="font-editorial text-3xl sm:text-4xl md:text-5xl font-normal text-charcoal-950">
+          Perbarui menu sesuai kondisi operasional.
+        </h2>
+<p class="text-sm sm:text-base text-stone-600 leading-relaxed font-normal">
+          Bahan baku habis di tengah shift? Cukup satu klik toggle, menu otomatis ditandai Sold Out di seluruh ponsel pelanggan saat itu juga.
+        </p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Left: Stock Toggle Table -->
+<div class="lg:col-span-7 rounded-2xl bg-white border border-sand-200 p-5 sm:p-6 shadow-subtle space-y-4">
+<div class="flex items-center justify-between border-b border-sand-100 pb-3">
+<span class="font-semibold text-sm text-charcoal-950">Katalog &amp; Manajemen Stok Real-Time</span>
+<span class="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold px-2 py-0.5 rounded">Sinkron Langsung</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-xs">
+<thead>
+<tr class="border-b border-sand-100 text-stone-500 font-medium">
+<th class="py-2">Item Menu</th>
+<th class="py-2">Kategori</th>
+<th class="py-2">Harga</th>
+<th class="py-2">Tag Kuis</th>
+<th class="py-2 text-right">Status Stok</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-sand-100 text-stone-800">
+<tr>
+<td class="py-2.5 font-semibold text-charcoal-950">Kopi Susu Aren</td>
+<td class="py-2.5 text-stone-500">Kopi</td>
+<td class="py-2.5 font-mono">Rp28.000</td>
+<td class="py-2.5"><span class="bg-sand-100 px-1.5 py-0.5 rounded text-[10px]">Manis, Dingin</span></td>
+<td class="py-2.5 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">Tersedia</span>
+</td>
+</tr>
+<tr>
+<td class="py-2.5 font-semibold text-charcoal-950">Iced Americano</td>
+<td class="py-2.5 text-stone-500">Kopi</td>
+<td class="py-2.5 font-mono">Rp24.000</td>
+<td class="py-2.5"><span class="bg-sand-100 px-1.5 py-0.5 rounded text-[10px]">Segar, Dingin</span></td>
+<td class="py-2.5 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">Tersedia</span>
+</td>
+</tr>
+<tr class="bg-stone-50/70">
+<td class="py-2.5 font-semibold text-stone-400 line-through">Truffle Fries</td>
+<td class="py-2.5 text-stone-400">Makanan</td>
+<td class="py-2.5 font-mono text-stone-400">Rp35.000</td>
+<td class="py-2.5"><span class="bg-stone-200/50 text-stone-400 px-1.5 py-0.5 rounded text-[10px]">Gurih, Santai</span></td>
+<td class="py-2.5 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">SOLD OUT</span>
+</td>
+</tr>
+<tr>
+<td class="py-2.5 font-semibold text-charcoal-950">Butter Croissant</td>
+<td class="py-2.5 text-stone-500">Pastry</td>
+<td class="py-2.5 font-mono">Rp25.000</td>
+<td class="py-2.5"><span class="bg-sand-100 px-1.5 py-0.5 rounded text-[10px]">Gurih, Hangat</span></td>
+<td class="py-2.5 text-right">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">Tersedia</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="text-[11px] text-stone-500 pt-2 border-t border-sand-100">
+            Perubahan stok seketika mengunci tombol pesanan pelanggan di meja.
+          </p>
+</div>
+<!-- Right: Acrylic QR Card Generator (High-Res 300 DPI Preview) -->
+<div class="lg:col-span-5 rounded-2xl bg-white border border-sand-200 p-6 shadow-subtle space-y-4">
+<div class="w-8 h-8 rounded-lg bg-charcoal-950 text-white flex items-center justify-center font-mono text-xs font-bold">
+            QR
+          </div>
+<h3 class="text-base font-semibold text-charcoal-950">Generator QR Meja Siap Cetak (300 DPI)</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+            Buat kode QR beresolusi tinggi untuk setiap nomor meja (Meja 01 s/d Meja 50) dengan label nomor meja tercetak jelas. Siap dicetak langsung pada stiker atau akrilik meja standar.
+          </p>
+<div class="p-4 rounded-xl bg-sand-50 border border-sand-200 flex items-center gap-4">
+<!-- Simulated Acrylic QR Card Graphic -->
+<div class="w-20 h-24 bg-white rounded-lg border-2 border-charcoal-900 p-2 flex flex-col items-center justify-between shadow-sm shrink-0">
+<span class="text-[8px] font-bold tracking-tight text-charcoal-950">KAFE SELA</span>
+<svg class="w-10 h-10 text-charcoal-950" fill="currentColor" viewBox="0 0 24 24">
+<path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14-2h2v2h-2v-2zm-4 0h2v2h-2v-2zm2 2h2v2h-2v-2zm2 2h2v2h-2v-2zm-6 2h2v2h-2v-2zm4 0h2v2h-2v-2z"></path>
+</svg>
+<span class="text-[8px] font-mono font-bold bg-sand-200 px-1 rounded text-charcoal-950">MEJA 07</span>
+</div>
+<div class="text-xs text-stone-600 space-y-1">
+<p class="font-bold text-charcoal-950 text-[11px]">Format Ekspor Siap Cetak:</p>
+<p class="text-[11px]">• PNG High-Res &amp; Vector PDF</p>
+<p class="text-[11px]">• Unduh per meja atau bulk ZIP (50 meja)</p>
+<p class="text-[11px]">• Ukuran rasio akrilik standar A6 / A7</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- PAYMENT & THERMAL RECEIPT SECTION -->
+<section class="py-20 md:py-28 border-t border-sand-200 bg-white" id="pembayaran">
+<div class="max-w-6xl mx-auto px-6">
+<div class="max-w-2xl mb-14 space-y-3">
+<span class="text-xs font-semibold uppercase tracking-widest text-terracotta-500">Transaksi &amp; Dokumentasi</span>
+<h2 class="font-editorial text-3xl sm:text-4xl md:text-5xl font-normal text-charcoal-950">
+          Pembayaran fleksibel dan bukti transaksi teratur.
+        </h2>
+<p class="text-sm sm:text-base text-stone-600 leading-relaxed font-normal">
+          Mendukung pembayaran mandiri non-tunai maupun penerimaan tunai konvensional di meja kasir.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Card 1: Dynamic QRIS -->
+<div class="p-6 rounded-2xl bg-sand-50 border border-sand-200 shadow-subtle space-y-3">
+<div class="w-8 h-8 rounded-lg bg-white border border-sand-200 text-stone-900 flex items-center justify-center font-bold text-xs">
+            QRIS
+          </div>
+<h3 class="font-semibold text-sm text-charcoal-950">QRIS Dinamis Otomatis</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+            Integrasi payment gateway resmi (Midtrans). Setiap order memiliki nominal pas dengan timer batas bayar 15 menit untuk mencegah order gantung.
+          </p>
+<div class="pt-3 border-t border-sand-200/80 text-[11px] font-mono text-stone-500">
+            Webhook verifikasi otomatis
+          </div>
+</div>
+<!-- Card 2: Cash Option -->
+<div class="p-6 rounded-2xl bg-sand-50 border border-sand-200 shadow-subtle space-y-3">
+<div class="w-8 h-8 rounded-lg bg-white border border-sand-200 text-stone-900 flex items-center justify-center font-bold text-xs">
+            CASH
+          </div>
+<h3 class="font-semibold text-sm text-charcoal-950">Opsi Bayar Tunai di Kasir</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+            Pelanggan memilih bayar tunai → tiket masuk ke kasir dengan status <em>"Menunggu Kasir"</em>. Staf menerima uang lalu menekan konfirmasi untuk meneruskan ke dapur.
+          </p>
+<div class="pt-3 border-t border-sand-200/80 text-[11px] font-mono text-stone-500">
+            Mencegah pesanan fiktif
+          </div>
+</div>
+<!-- Card 3: Thermal Receipt 58/80mm -->
+<div class="p-6 rounded-2xl bg-sand-50 border border-sand-200 shadow-subtle space-y-3">
+<div class="w-8 h-8 rounded-lg bg-white border border-sand-200 text-stone-900 flex items-center justify-center font-bold text-xs">
+            STRUK
+          </div>
+<h3 class="font-semibold text-sm text-charcoal-950">Struk Digital &amp; Thermal 58/80 mm</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+            Pelanggan mendapatkan e-receipt di ponsel. Kasir dapat mencetak struk fisik via printer thermal 58mm atau 80mm yang kompatibel via protokol ESC/POS standar.
+          </p>
+<div class="pt-3 border-t border-sand-200/80 text-[11px] font-mono text-stone-500">
+            Layout monospaced ESC/POS
+          </div>
+</div>
+</div>
+</div>
+</section>
+<!-- FAQ SECTION -->
+<section class="py-20 md:py-28 border-t border-sand-200 bg-sand-50/50" id="faq">
+<div class="max-w-3xl mx-auto px-6">
+<div class="text-center mb-14 space-y-3">
+<span class="text-xs font-semibold uppercase tracking-widest text-terracotta-500">Pertanyaan Umum</span>
+<h2 class="font-editorial text-3xl sm:text-4xl md:text-5xl font-normal text-charcoal-950">
+          Hal yang sering ditanyakan pemilik kafe.
+        </h2>
+<p class="text-sm text-stone-600 font-normal">
+          Jawaban lugas dan faktual mengenai implementasi sistem Smart QR Menu di outlet Anda.
+        </p>
+</div>
+<div class="space-y-3">
+<!-- Q1 -->
+<div class="p-5 rounded-2xl bg-white border border-sand-200 shadow-subtle space-y-2">
+<h3 class="font-semibold text-sm text-charcoal-950">Apakah pelanggan perlu mengunduh aplikasi dari App Store atau Play Store?</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+            Tidak. Smart QR Menu berjalan murni melalui web peramban (browser) di ponsel pelanggan. Begitu kode QR dipindai oleh kamera ponsel biasa, menu langsung terbuka seketika tanpa proses instalasi atau pembuatan akun yang membuang waktu.
+          </p>
+</div>
+<!-- Q2 -->
+<div class="p-5 rounded-2xl bg-white border border-sand-200 shadow-subtle space-y-2">
+<h3 class="font-semibold text-sm text-charcoal-950">Apakah kuis preferensi wajib diisi oleh setiap pelanggan?</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+            Tidak wajib. Kuis dirancang sebagai bantuan 30 detik bagi pelanggan yang bingung memilih. Pada setiap langkah selalu tersedia tombol <strong>"Lewati"</strong> agar pelanggan yang sudah tahu apa yang ingin dipesan dapat langsung membuka katalog utama.
+          </p>
+</div>
+<!-- Q3 -->
+<div class="p-5 rounded-2xl bg-white border border-sand-200 shadow-subtle space-y-2">
+<h3 class="font-semibold text-sm text-charcoal-950">Apakah pelanggan tetap dapat membayar menggunakan uang tunai?</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+            Bisa. Sistem menyediakan opsi pembayaran <em>"Tunai di Kasir"</em>. Pesanan akan tercatat di dashboard kasir dengan status menunggu pelunasan, dan baru diteruskan ke tiket dapur setelah staf kasir mengonfirmasi penerimaan uang.
+          </p>
+</div>
+<!-- Q4 -->
+<div class="p-5 rounded-2xl bg-white border border-sand-200 shadow-subtle space-y-2">
+<h3 class="font-semibold text-sm text-charcoal-950">Bagaimana jika salah satu bahan makanan atau biji kopi habis di tengah shift?</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+            Staf kasir atau manajer dapat mengubah status menu menjadi <em>Sold Out</em> di panel manajemen. Perubahan ini langsung mengunci tombol pesanan menu tersebut di ponsel seluruh pelanggan di meja secara real-time.
+          </p>
+</div>
+<!-- Q5 -->
+<div class="p-5 rounded-2xl bg-white border border-sand-200 shadow-subtle space-y-2">
+<h3 class="font-semibold text-sm text-charcoal-950">Apakah modul dapat dipilih sesuai kebutuhan kafe saya?</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+            Ya. Anda dapat memulai hanya dengan katalog QR dan pembayaran kasir terlebih dahulu, atau langsung mengaktifkan modul lengkap termasuk kuis kurasi dan Kitchen Display System di dapur.
+          </p>
+</div>
+<!-- Q6 -->
+<div class="p-5 rounded-2xl bg-white border border-sand-200 shadow-subtle space-y-2">
+<h3 class="font-semibold text-sm text-charcoal-950">Apa yang perlu disiapkan untuk pembayaran digital dan printer kasir?</h3>
+<p class="text-xs text-stone-600 leading-relaxed">
+            Untuk QRIS otomatis, diperlukan pendaftaran akun merchant payment gateway (Midtrans). Untuk printer kasir, sistem mendukung printer thermal standar 58mm dan 80mm; kesesuaian tipe perangkat fisik akan diuji bersama saat sesi konsultasi dan setup.
+          </p>
+</div>
+</div>
+</div>
+</section>
+<!-- BOTTOM EDITORIAL CTA SECTION (Deep Charcoal card with warm subtle glow) -->
+<section class="py-20 md:py-28 px-6">
+<div class="max-w-5xl mx-auto rounded-3xl bg-charcoal-950 text-white p-10 sm:p-16 relative overflow-hidden text-center space-y-6 shadow-2xl border border-charcoal-800">
+<!-- Ambient light effect inspired by Forge -->
+<div class="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(194,94,43,0.3),transparent_70%)]"></div>
+<div class="relative z-10 space-y-6">
+<span class="inline-block px-3 py-1 rounded-full bg-charcoal-800/80 text-sand-300 border border-charcoal-700 text-[11px] font-medium tracking-wide">
+          Siap Meningkatkan Pengalaman Meja Kafe Anda?
+        </span>
+<h2 class="font-editorial text-4xl sm:text-5xl md:text-6xl font-normal leading-[1.08] tracking-tight">
+          Lihat bagaimana alurnya bekerja <br class="hidden sm:inline">
+<span class="italic font-normal">untuk outlet kafe Anda.</span>
+</h2>
+<p class="text-stone-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed font-normal">
+          Uji coba langsung alur pemesanan mandiri pelanggan atau diskusikan kebutuhan operasional meja kafe Anda bersama tim kami.
+        </p>
+<div class="pt-4 flex flex-wrap items-center justify-center gap-3">
+<a class="px-6 py-3 rounded-full bg-white hover:bg-stone-100 text-charcoal-950 font-medium text-xs transition-all shadow-md" href="#demo-kuis">
+            Coba Demo
+          </a>
+<button class="px-6 py-3 rounded-full bg-charcoal-800 hover:bg-charcoal-700 border border-charcoal-700 text-white font-medium text-xs transition-all" onclick="openConsultationModal()">
+            Diskusikan untuk Kafe Saya
+          </button>
+</div>
+<p class="text-[11px] text-stone-500 pt-2 font-mono">
+          Konsultasi melalui formulir atau kontak WhatsApp resmi. Tanpa komitmen awal.
+        </p>
+</div>
+</div>
+</section>
+</main>
+<!-- CLEAN MINIMAL FOOTER -->
+<footer class="bg-[#111110] text-stone-400 text-xs py-12 border-t border-charcoal-800">
+<div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+<div class="flex items-center gap-3">
+<span class="w-6 h-6 rounded-md bg-white text-charcoal-950 font-serif text-xs flex items-center justify-center italic font-bold">s</span>
+<div>
+<p class="font-semibold text-stone-200 text-xs">Smart QR Menu</p>
+<p class="text-[11px] text-stone-500">Sistem Pemesanan Mandiri Meja Kafe &amp; Restoran di Indonesia</p>
+</div>
+</div>
+<nav class="flex flex-wrap items-center gap-6 text-[12px] text-stone-400">
+<a class="hover:text-white transition-colors" href="#cara-kerja">Cara Kerja</a>
+<a class="hover:text-white transition-colors" href="#demo-kuis">Simulasi Kuis</a>
+<a class="hover:text-white transition-colors" href="#operasional">Kasir &amp; KDS</a>
+<a class="hover:text-white transition-colors" href="#kelola-menu">Pengelolaan</a>
+<a class="hover:text-white transition-colors" href="#faq">FAQ</a>
+</nav>
+<div class="text-stone-500 text-[11px] font-mono">
+      © 2026 Smart QR Menu · Simulasi data Kafe SELA.
+    </div>
+</div>
+</footer>
+<!-- CONSULTATION MODAL -->
+<div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4" id="consultation-modal">
+<div class="bg-white rounded-2xl max-w-md w-full p-6 border border-stone-200 shadow-2xl space-y-4">
+<div class="flex items-center justify-between pb-3 border-b border-sand-200">
+<h3 class="font-semibold text-base text-charcoal-950">Diskusikan untuk Kafe Saya</h3>
+<button class="w-7 h-7 rounded-full bg-sand-100 flex items-center justify-center text-stone-500 hover:text-charcoal-950 font-bold text-xs" onclick="closeConsultationModal()">✕</button>
+</div>
+<p class="text-xs text-stone-600 leading-relaxed">
+      Silakan hubungi tim kami untuk konsultasi layout QR meja, penyesuaian menu, atau demo teknis integrasi kasir.
+    </p>
+<div class="bg-sand-50 border border-sand-200 p-4 rounded-xl space-y-2 text-xs">
+<div class="flex items-center justify-between">
+<span class="font-semibold text-charcoal-950">Kanal Konsultasi:</span>
+<span class="text-emerald-700 font-semibold">WhatsApp Resmi</span>
+</div>
+<p class="text-stone-500">Nomor WhatsApp perwakilan produk:</p>
+<div class="p-2.5 bg-white rounded-lg border border-sand-200 font-mono text-charcoal-950 font-semibold text-center select-all">
+        +62 812-XXXX-XXXX (Placeholder Konfigurasi)
+      </div>
+<p class="text-[10px] text-stone-400 italic text-center">*Nomor resmi akan dihubungkan saat onboarding domain produksi.</p>
+</div>
+<div class="pt-2 flex gap-3">
+<button class="flex-1 py-2 rounded-lg border border-stone-200 text-stone-700 text-xs font-semibold hover:bg-stone-50" onclick="closeConsultationModal()">
+        Tutup
+      </button>
+<button class="flex-1 py-2 rounded-lg bg-charcoal-950 text-white text-xs font-semibold hover:bg-charcoal-800" onclick="alert('Ini adalah demonstrasi interaktif. Nomor WhatsApp resmi akan aktif saat peluncuran produksi.'); closeConsultationModal();">
+        Lanjut ke WhatsApp
+      </button>
+</div>
+</div>
+</div>
+<script>
+  // State of Quiz Demo
+  const kuisState = {
+    suasana: 'santai',
+    rasa: 'segar',
+    suhu: 'dingin'
+  };
+
+  const rekomendasiData = {
+    'santai-segar-dingin': {
+      title: 'Iced Americano + Matcha Cold Brew',
+      reason: 'Dipilih berdasarkan preferensi seduhan dingin beraroma bersih dan segar untuk menemani suasana santai sore hari di meja.',
+      price: 'Rp24.000',
+      match: '98% Cocok',
+      tags: ['#Santai', '#Segar', '#Dingin']
+    },
+    'fokus-pahit-hangat': {
+      title: 'Single Origin Filter + Dark Chocolate',
+      reason: 'Karakter rasa bold dengan aroma earthy yang menenangkan, dirancang untuk menjaga konsentrasi saat kerja mandiri atau membaca.',
+      price: 'Rp32.000',
+      match: '96% Cocok',
+      tags: ['#MenemaniFokus', '#PahitBold', '#Hangat']
+    },
+    'santai-manis-dingin': {
+      title: 'Kopi Susu Aren SELA + Croissant',
+      reason: 'Perpaduan espresso lembut dan gula aren organik manis alami dalam sajian dingin untuk rehat santai bersama teman.',
+      price: 'Rp28.000',
+      match: '99% Cocok',
+      tags: ['#Santai', '#ManisLegit', '#Dingin']
+    },
+    'eksplorasi-segar-dingin': {
+      title: 'Cascara Sparkling Citrus Tonic',
+      reason: 'Racikan musiman berkarakter asam buah terangkat dengan sensasi soda segar untuk mencoba cita rasa kopi yang berbeda.',
+      price: 'Rp30.000',
+      match: '95% Cocok',
+      tags: ['#MencobaBaru', '#SegarCitrus', '#Dingin']
+    }
+  };
+
+  function setKuisVal(group, val) {
+    kuisState[group] = val;
+
+    // Update button styling
+    const buttons = document.querySelectorAll(`[data-group="${group}"]`);
+    buttons.forEach(btn => {
+      if (btn.getAttribute('data-val') === val) {
+        btn.className = 'kuis-btn active py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all bg-charcoal-950 text-white border-charcoal-950';
+      } else {
+        btn.className = 'kuis-btn py-2 px-3 rounded-lg border text-xs font-semibold text-center transition-all bg-white text-stone-700 border-sand-200 hover:bg-stone-50';
+      }
+    });
+
+    renderKuisResult();
+  }
+
+  function renderKuisResult() {
+    const key = `${kuisState.suasana}-${kuisState.rasa}-${kuisState.suhu}`;
+    const fallback = {
+      title: kuisState.suhu === 'hangat' ? 'Hot Latte & Artisanal Pastry' : 'Kopi Susu Aren Signature (Dingin)',
+      reason: `Diselaraskan dengan pilihan rasa ${kuisState.rasa} dan suasana ${kuisState.suasana} Anda di meja hari ini.`,
+      price: 'Rp28.000',
+      match: '94% Cocok',
+      tags: [`#${kuisState.suasana}`, `#${kuisState.rasa}`, `#${kuisState.suhu}`]
+    };
+
+    const data = rekomendasiData[key] || fallback;
+
+    document.getElementById('demo-result-title').textContent = data.title;
+    document.getElementById('demo-result-reason').textContent = data.reason;
+    document.getElementById('demo-result-price').textContent = data.price;
+    document.getElementById('demo-result-match').textContent = data.match;
+
+    const tagContainer = document.getElementById('demo-result-tags');
+    tagContainer.innerHTML = '';
+    data.tags.forEach(t => {
+      const span = document.createElement('span');
+      span.className = 'text-[10px] font-mono bg-sand-100 text-stone-700 px-2 py-0.5 rounded';
+      span.textContent = t;
+      tagContainer.appendChild(span);
+    });
+  }
+
+  function openConsultationModal() {
+    const modal = document.getElementById('consultation-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeConsultationModal() {
+    const modal = document.getElementById('consultation-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+</script>
+
+
+</body></html>
