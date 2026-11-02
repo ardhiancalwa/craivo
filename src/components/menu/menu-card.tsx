@@ -15,6 +15,7 @@ export interface MenuCardProps {
 
 export function MenuCard({ item, onOpenModifier }: MenuCardProps) {
   const { addItem, getItemQuantity, items, updateQuantity } = useCart()
+  const [imageError, setImageError] = React.useState(false)
   const isSoldOut = !item.isAvailable
   const hasModifiers = item.modifierGroups && item.modifierGroups.length > 0
   const cartQty = getItemQuantity(item.id)
@@ -51,12 +52,14 @@ export function MenuCard({ item, onOpenModifier }: MenuCardProps) {
       {/* Top: Image & Badges */}
       <div>
         <div className="relative aspect-square w-full overflow-hidden rounded-DEFAULT bg-surface-container">
-          {item.image ? (
+          {item.image && !imageError ? (
             <Image
               src={item.image}
               alt={item.name}
               fill
               sizes="(max-width: 640px) 50vw, 200px"
+              unoptimized={item.image.startsWith('/api/images/')}
+              onError={() => setImageError(true)}
               className={cn(
                 'object-cover transition-transform duration-280 group-hover:scale-105',
                 isSoldOut && 'grayscale-[80%]'

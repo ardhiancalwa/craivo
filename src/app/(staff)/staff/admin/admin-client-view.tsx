@@ -1377,7 +1377,13 @@ export function AdminClientView() {
                       {/* Image Thumbnail */}
                       <div className="w-14 h-14 rounded-xl overflow-hidden bg-surface-container border border-outline-variant flex-shrink-0 relative">
                         {item.image ? (
-                          <Image src={item.image} alt={item.name} fill className="object-cover" />
+                          <Image
+                            src={item.image}
+                            alt={item.name}
+                            fill
+                            unoptimized={item.image.startsWith('/api/images/')}
+                            className="object-cover"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-outline">
                             <Coffee className="w-6 h-6" />
@@ -2804,7 +2810,13 @@ export function AdminClientView() {
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-16 rounded-xl overflow-hidden bg-surface-container border border-outline-variant relative flex-shrink-0">
                     {menuFormImage ? (
-                      <Image src={menuFormImage} alt="Preview" fill className="object-cover" />
+                      <Image
+                        src={menuFormImage}
+                        alt="Preview"
+                        fill
+                        unoptimized={menuFormImage.startsWith('/api/images/') || menuFormImage.startsWith('data:')}
+                        className="object-cover"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-outline">
                         <Coffee className="w-6 h-6" />

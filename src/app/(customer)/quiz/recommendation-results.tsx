@@ -242,6 +242,7 @@ export function RecommendationResults({
                     alt={data.hero.menuItem.name}
                     fill
                     sizes="(max-width: 640px) 96px, 112px"
+                    unoptimized={data.hero.menuItem.image.startsWith('/api/images/')}
                     className="object-cover"
                   />
                 ) : (
@@ -313,6 +314,7 @@ export function RecommendationResults({
                       alt={alt.menuItem.name}
                       fill
                       sizes="56px"
+                      unoptimized={alt.menuItem.image.startsWith('/api/images/')}
                       className="object-cover"
                     />
                   ) : (
