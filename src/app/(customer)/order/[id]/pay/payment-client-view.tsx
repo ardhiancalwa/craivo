@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { formatIDR } from '@/lib/utils'
+import { formatIDR, copyToClipboard } from '@/lib/utils'
 
 interface PaymentClientViewProps {
   orderId: string
@@ -14,6 +14,7 @@ interface PaymentClientViewProps {
   qrString?: string | null
   expiresAt: string
   initialPaymentStatus: string
+  isProduction?: boolean
 }
 
 export function PaymentClientView({
@@ -25,17 +26,74 @@ export function PaymentClientView({
   qrString,
   expiresAt,
   initialPaymentStatus,
+  isProduction = false,
 }: PaymentClientViewProps) {
   const router = useRouter()
   const [, startTransition] = useTransition()
 
   const [paymentStatus, setPaymentStatus] = useState<string>(initialPaymentStatus)
   const [isChecking, setIsChecking] = useState<boolean>(false)
+  const [isSimulating, setIsSimulating] = useState<boolean>(false)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [copiedUrl, setCopiedUrl] = useState<boolean>(false)
+  const [copiedString, setCopiedString] = useState<boolean>(false)
   const [remainingSeconds, setRemainingSeconds] = useState<number>(() => {
     const diff = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)
     return Math.max(0, diff)
   })
+
+  const handleCopyQrisUrl = async () => {
+    if (!qrisUrl) return
+    const success = await copyToClipboard(qrisUrl)
+    if (success) {
+      setCopiedUrl(true)
+      setStatusMessage('URL QRIS disalin! Siap ditempel ke Simulator OpenAPI Midtrans.')
+      setTimeout(() => {
+        setCopiedUrl(false)
+        setStatusMessage(null)
+      }, 3000)
+    }
+  }
+
+  const handleCopyQrisString = async () => {
+    if (!qrString) return
+    const success = await copyToClipboard(qrString)
+    if (success) {
+      setCopiedString(true)
+      setStatusMessage('Kode string QRIS berhasil disalin ke clipboard.')
+      setTimeout(() => {
+        setCopiedString(false)
+        setStatusMessage(null)
+      }, 3000)
+    }
+  }
+
+  const handleSimulatePayment = async () => {
+    if (isProduction || isSimulating || paymentStatus === 'PAID') return
+    setIsSimulating(true)
+    setStatusMessage('Mengirim perintah simulasi pelunasan ke Midtrans Sandbox...')
+
+    try {
+      const res = await fetch(`/api/orders/${orderId}/pay/simulate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      })
+      const json = await res.json()
+
+      if (json.success) {
+        setStatusMessage('⚡ Simulasi pelunasan sukses! Menyelaraskan status pesanan...')
+        await checkStatus(false)
+      } else {
+        setStatusMessage(
+          `Gagal simulasi: ${json.error?.message || 'Simulator menolak transaksi'}`
+        )
+      }
+    } catch {
+      setStatusMessage('Terjadi kesalahan koneksi saat memicu simulasi pembayaran.')
+    } finally {
+      setIsSimulating(false)
+    }
+  }
 
   // Format detik menjadi MM:SS
   const formatTime = (seconds: number) => {
@@ -184,9 +242,15 @@ export function PaymentClientView({
         <div className="bg-surface border border-border rounded-3xl p-6 shadow-sm flex flex-col items-center">
           <div className="w-full flex items-center justify-between text-xs text-brand/60 pb-3 border-b border-border/60 mb-4">
             <span className="font-medium">Meja {tableNumber} • SELA Artisanal Coffee</span>
-            <span className="font-mono uppercase font-bold text-[11px] bg-brand/5 px-2 py-0.5 rounded">
-              QRIS Dinamis
-            </span>
+            {isProduction ? (
+              <span className="font-mono uppercase font-bold text-[10px] bg-emerald-500/10 text-emerald-800 px-2 py-0.5 rounded border border-emerald-300">
+                QRIS Dinamis Resmi
+              </span>
+            ) : (
+              <span className="font-mono uppercase font-bold text-[10px] bg-amber-500/10 text-amber-800 px-2 py-0.5 rounded border border-amber-300">
+                Sandbox Test Mode
+              </span>
+            )}
           </div>
 
           {/* QR Code Container */}
@@ -224,18 +288,86 @@ export function PaymentClientView({
             <p className="text-[11px] text-brand/50">Sudah termasuk PPN 0% & Service 0%</p>
           </div>
 
-          {/* Aksi Unduh / Buka QR */}
+          {/* Aksi Pembayaran & Salin / Simulasi */}
           {qrisUrl && (
-            <div className="mt-4 w-full flex gap-2">
-              <a
-                href={qrisUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="touch-target flex-1 py-2.5 px-3 rounded-xl bg-brand/5 hover:bg-brand/10 border border-border text-brand text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <span>📥</span>
-                <span>Unduh / Buka QR</span>
-              </a>
+            <div className="mt-4 w-full space-y-2.5">
+              {!isProduction && (
+                <button
+                  type="button"
+                  onClick={handleSimulatePayment}
+                  disabled={isSimulating || isPaid || isExpired}
+                  className="touch-target w-full py-3 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 hover:bg-primary/95"
+                >
+                  {isSimulating ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      <span>Memproses Simulasi di Gateway...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>⚡</span>
+                      <span>Simulasikan Pembayaran Lunas (Sandbox Test)</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                {!isProduction && (
+                  <button
+                    type="button"
+                    onClick={handleCopyQrisUrl}
+                    className="touch-target flex-1 py-2.5 px-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]"
+                  >
+                    <span>{copiedUrl ? '✓' : '📋'}</span>
+                    <span>{copiedUrl ? 'URL QRIS Berhasil Disalin!' : 'Salin URL QRIS (Simulator)'}</span>
+                  </button>
+                )}
+
+                {qrString && (
+                  <button
+                    type="button"
+                    onClick={handleCopyQrisString}
+                    className="touch-target flex-1 py-2.5 px-3 rounded-xl bg-brand/5 hover:bg-brand/10 border border-border text-brand text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]"
+                    title="Salin raw string payload QRIS"
+                  >
+                    <span>{copiedString ? '✓' : '🔢'}</span>
+                    <span>{copiedString ? 'String Disalin!' : 'Salin String'}</span>
+                  </button>
+                )}
+
+                <a
+                  href={qrisUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="touch-target py-2.5 px-3 rounded-xl bg-brand/5 hover:bg-brand/10 border border-border text-brand text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <span>📥</span>
+                  <span>Buka QR</span>
+                </a>
+              </div>
+
+              {/* Panduan Sandbox vs Live */}
+              {!isProduction ? (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-950 leading-relaxed text-left flex items-start gap-2">
+                  <span className="shrink-0 text-sm">💡</span>
+                  <div className="space-y-1">
+                    <p>
+                      <strong>Mode Pengujian Sandbox:</strong> Klik tombol <strong>⚡ Simulasikan Pembayaran Lunas</strong> di atas untuk menyelesaikan transaksi secara instan, atau salin URL QRIS lalu tempelkan pada <a href="https://simulator.sandbox.midtrans.com/v2/qris/index" target="_blank" rel="noopener noreferrer" className="font-bold text-primary underline underline-offset-2">Simulator Midtrans OpenAPI v2</a>.
+                    </p>
+                    <p className="text-[10px] text-amber-900/70">
+                      <em>Catatan: Gunakan endpoint simulator v2 (/v2/qris/index) resmi Midtrans. Simulator lama (/qris/index) menghasilkan status unsuccessful.</em>
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-950 leading-relaxed text-left flex items-start gap-2">
+                  <span className="shrink-0 text-sm">🔒</span>
+                  <p>
+                    <strong>QRIS Resmi Siap Dipindai:</strong> Buka aplikasi m-Banking atau e-Wallet apa pun (BCA, Mandiri, GoPay, OVO, ShopeePay, Dana, dll) dan arahkan kamera ke kode QR di atas untuk menyelesaikan transaksi nyata.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -108,8 +108,16 @@ export function RecommendationResults({
     }
   }
 
+  // Ambil daftar menu rekomendasi utama (default 3 menu)
+  const topItems =
+    data.topRecommendations && data.topRecommendations.length > 0
+      ? data.topRecommendations
+      : data.hero
+      ? [data.hero]
+      : []
+
   // Jika seluruh katalog kosong / habis
-  if (!data.hero && data.alternatives.length === 0) {
+  if (topItems.length === 0 && data.alternatives.length === 0) {
     return (
       <div className="py-8">
         <EmptyState
@@ -145,8 +153,8 @@ export function RecommendationResults({
       }
       preferencePills.push({ label: pref.optionLabel, icon })
     })
-  } else if (data.hero && data.hero.matchedTags.length > 0) {
-    data.hero.matchedTags.forEach((tag) => {
+  } else if (topItems[0] && topItems[0].matchedTags.length > 0) {
+    topItems[0].matchedTags.forEach((tag) => {
       let icon = <Sparkles className="w-3.5 h-3.5 text-primary" />
       if (tag.dimension === 'FLAVOR') icon = <Droplets className="w-3.5 h-3.5 text-primary" />
       if (tag.dimension === 'FORMAT') icon = <Snowflake className="w-3.5 h-3.5 text-primary" />
@@ -159,7 +167,7 @@ export function RecommendationResults({
   const formatLabel = selectedPreferences.find((p) => p.dimension === 'FORMAT')?.optionLabel
   const headlineTitle = moodLabel && formatLabel
     ? `Racikan ${moodLabel} & ${formatLabel}`
-    : data.hero
+    : topItems.length > 0
     ? `Pilihan Selaras Meja ${tableNumber || 'Anda'}`
     : 'Rekomendasi Favorit'
 
@@ -210,85 +218,106 @@ export function RecommendationResults({
         </div>
       )}
 
-      {/* 2. HIGHLIGHT REKOMENDASI TERPILIH (HERO MATCH) */}
-      {data.hero && (
+      {/* 2. HIGHLIGHT REKOMENDASI TERPILIH (TOP 3 MENU UTAMA) */}
+      {topItems.length > 0 && (
         <section className="flex flex-col gap-3">
-          <div className="bg-surface-lowest rounded-2xl p-4 sm:p-5 shadow-sm border border-outline-variant/60 flex flex-col gap-3.5">
+          <div className="bg-surface-lowest rounded-2xl p-4 sm:p-5 shadow-sm border border-outline-variant/60 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-sans font-bold text-primary uppercase tracking-widest">
                   {tableNumber ? `Pilihan Barista Meja ${tableNumber}` : 'Pilihan Barista'}
                 </span>
                 <span className="bg-primary-fixed text-on-primary-fixed text-[11px] font-sans font-semibold px-2.5 py-0.5 rounded-full">
-                  98% Cocok
+                  Top {topItems.length} Rekomendasi
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-sans font-bold text-on-surface tracking-tight">
                 {headlineTitle}
               </h2>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                {data.hero.matchReason ||
-                  'Berdasarkan preferensimu, barista kami menyarankan racikan ini untuk menemani momen santai kunjunganmu hari ini.'}
+                {topItems[0]?.matchReason ||
+                  'Berdasarkan kombinasi preferensi yang Anda pilih, berikut 3 racikan terbaik yang paling pas untuk Anda:'}
               </p>
             </div>
 
-            {/* Kartu Rekomendasi Horizontal Artisanal (dari result-recommendation.html) */}
-            <article className="bg-surface-low rounded-xl p-3.5 sm:p-4 flex gap-3.5 sm:gap-4 items-center border border-outline-variant/40 hover:border-primary/40 transition-all">
-              {/* Thumbnail Produk */}
-              <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 bg-surface-container border border-outline-variant/30 flex items-center justify-center">
-                {data.hero.menuItem.image ? (
-                  <Image
-                    src={data.hero.menuItem.image}
-                    alt={data.hero.menuItem.name}
-                    fill
-                    sizes="(max-width: 640px) 96px, 112px"
-                    unoptimized={data.hero.menuItem.image.startsWith('/api/images/')}
-                    className="object-cover"
-                  />
-                ) : (
-                  <Coffee className="w-7 h-7 text-on-surface-variant/40" />
-                )}
-                {data.hero.menuItem.isPopular && (
-                  <span className="absolute bottom-1 left-1 bg-on-surface/85 backdrop-blur-xs text-surface text-[9.5px] font-semibold px-1.5 py-0.5 rounded">
-                    Signature
-                  </span>
-                )}
-              </div>
+            {/* List 3 Menu Rekomendasi Utama */}
+            <div className="space-y-3">
+              {topItems.map((recItem, idx) => {
+                const matchPct = idx === 0 ? '98% Cocok' : idx === 1 ? '94% Cocok' : '90% Cocok'
+                const rankLabel = idx === 0 ? 'Pilihan Utama #1' : `Rekomendasi #${idx + 1}`
 
-              {/* Info Produk & Aksi Tambah */}
-              <div className="flex flex-col flex-1 min-w-0">
-                <div className="flex items-baseline justify-between gap-1">
-                  <h3 className="text-sm sm:text-base font-sans font-bold text-on-surface truncate">
-                    {data.hero.menuItem.name}
-                  </h3>
-                  <span className="font-price-tabular text-sm sm:text-base font-bold text-primary shrink-0 tabular-nums">
-                    {formatIDR(data.hero.menuItem.price)}
-                  </span>
-                </div>
-
-                <p className="text-xs text-on-surface-variant line-clamp-2 mt-0.5 leading-relaxed">
-                  {data.hero.menuItem.description}
-                </p>
-
-                <div className="flex items-center justify-between mt-2 pt-1">
-                  <span className="text-[11px] font-sans font-medium text-on-surface-variant/80">
-                    {data.hero.menuItem.modifierGroups && data.hero.menuItem.modifierGroups.length > 0
-                      ? 'Kustomisasi: Gula / Es / Susu'
-                      : data.hero.matchedTags && data.hero.matchedTags.length > 0
-                      ? data.hero.matchedTags[0]?.name || 'Racikan Pilihan'
-                      : 'Racikan Pilihan'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleAddToCart(data.hero!.menuItem)}
-                    aria-label={`Tambah ${data.hero.menuItem.name} ke pesanan`}
-                    className="w-8 h-8 rounded-full bg-primary hover:bg-primary-container text-on-primary flex items-center justify-center transition-all active:scale-95 shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                return (
+                  <article
+                    key={recItem.menuItem.id}
+                    className="bg-surface-low rounded-xl p-3.5 sm:p-4 flex gap-3.5 sm:gap-4 items-center border border-outline-variant/40 hover:border-primary/40 transition-all"
                   >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </article>
+                    {/* Thumbnail Produk */}
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 bg-surface-container border border-outline-variant/30 flex items-center justify-center">
+                      {recItem.menuItem.image ? (
+                        <Image
+                          src={recItem.menuItem.image}
+                          alt={recItem.menuItem.name}
+                          fill
+                          sizes="(max-width: 640px) 96px, 112px"
+                          unoptimized={recItem.menuItem.image.startsWith('/api/images/')}
+                          className="object-cover"
+                        />
+                      ) : (
+                        <Coffee className="w-7 h-7 text-on-surface-variant/40" />
+                      )}
+                      {recItem.menuItem.isPopular && (
+                        <span className="absolute bottom-1 left-1 bg-on-surface/85 backdrop-blur-xs text-surface text-[9.5px] font-semibold px-1.5 py-0.5 rounded">
+                          Signature
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Info Produk & Aksi Tambah */}
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-primary">
+                          {rankLabel}
+                        </span>
+                        <span className="text-[10px] font-sans font-medium text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded">
+                          {matchPct}
+                        </span>
+                      </div>
+
+                      <div className="flex items-baseline justify-between gap-1">
+                        <h3 className="text-sm sm:text-base font-sans font-bold text-on-surface truncate">
+                          {recItem.menuItem.name}
+                        </h3>
+                        <span className="font-price-tabular text-sm sm:text-base font-bold text-primary shrink-0 tabular-nums">
+                          {formatIDR(recItem.menuItem.price)}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-on-surface-variant line-clamp-2 mt-0.5 leading-relaxed">
+                        {recItem.menuItem.description}
+                      </p>
+
+                      <div className="flex items-center justify-between mt-2 pt-1">
+                        <span className="text-[11px] font-sans font-medium text-on-surface-variant/80 truncate mr-2">
+                          {recItem.menuItem.modifierGroups && recItem.menuItem.modifierGroups.length > 0
+                            ? 'Kustomisasi: Gula / Es / Susu'
+                            : recItem.matchedTags && recItem.matchedTags.length > 0
+                            ? recItem.matchedTags.map((t) => t.name).join(' • ')
+                            : 'Racikan Pilihan'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleAddToCart(recItem.menuItem)}
+                          aria-label={`Tambah ${recItem.menuItem.name} ke pesanan`}
+                          className="w-8 h-8 rounded-full bg-primary hover:bg-primary-container text-on-primary flex items-center justify-center transition-all active:scale-95 shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shrink-0"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
           </div>
         </section>
       )}

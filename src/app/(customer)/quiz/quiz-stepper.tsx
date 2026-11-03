@@ -17,8 +17,8 @@ interface QuizStepperProps {
 
 export function QuizStepper({ questions, tableNumber }: QuizStepperProps) {
   const [currentStepIndex, setCurrentStepIndex] = React.useState(0)
-  // Selected option ID per question ID
-  const [selectedOptions, setSelectedOptions] = React.useState<Record<string, string>>({})
+  // Selected option IDs per question ID (mendukung multi-select)
+  const [selectedOptions, setSelectedOptions] = React.useState<Record<string, string[]>>({})
   const [isLoading, setIsLoading] = React.useState(false)
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
   const [pendingResult, setPendingResult] = React.useState<RecommendationResponse | null>(null)
@@ -28,26 +28,38 @@ export function QuizStepper({ questions, tableNumber }: QuizStepperProps) {
   const currentQuestion = questions[currentStepIndex]
   const totalSteps = questions.length
 
-  // Calculate selected preferences summary
+  // Calculate selected preferences summary (mendukung multiple opsi per pertanyaan)
   const selectedPreferences: SelectedPreferenceItem[] = React.useMemo(() => {
-    return questions
-      .map((q) => {
-        const optionId = selectedOptions[q.id]
-        const opt = q.options.find((o) => o.id === optionId)
-        return {
-          dimension: q.dimension,
-          questionTitle: q.title,
-          optionLabel: opt?.label || '',
+    const list: SelectedPreferenceItem[] = []
+    questions.forEach((q) => {
+      const optionIds = selectedOptions[q.id] || []
+      optionIds.forEach((optId) => {
+        const opt = q.options.find((o) => o.id === optId)
+        if (opt?.label) {
+          list.push({
+            dimension: q.dimension,
+            questionTitle: q.title,
+            optionLabel: opt.label,
+          })
         }
       })
-      .filter((p) => Boolean(p.optionLabel))
+    })
+    return list
   }, [questions, selectedOptions])
 
-  const handleSelectOption = (questionId: string, optionId: string) => {
-    setSelectedOptions((prev) => ({
-      ...prev,
-      [questionId]: optionId,
-    }))
+  const handleToggleOption = (questionId: string, optionId: string) => {
+    setSelectedOptions((prev) => {
+      const currentList = prev[questionId] || []
+      const exists = currentList.includes(optionId)
+      const updated = exists
+        ? currentList.filter((id) => id !== optionId)
+        : [...currentList, optionId]
+
+      return {
+        ...prev,
+        [questionId]: updated,
+      }
+    })
   }
 
   const handleNextStep = () => {
@@ -80,7 +92,8 @@ export function QuizStepper({ questions, tableNumber }: QuizStepperProps) {
     setPendingResult(null)
 
     try {
-      const selectedOptionIds = Object.values(selectedOptions)
+      // Ratakan (flatten) semua opsi yang dipilih dari setiap langkah
+      const selectedOptionIds = Object.values(selectedOptions).flat()
 
       const res = await fetch('/api/quiz/recommend', {
         method: 'POST',
@@ -180,7 +193,8 @@ export function QuizStepper({ questions, tableNumber }: QuizStepperProps) {
     )
   }
 
-  const isCurrentStepAnswered = Boolean(selectedOptions[currentQuestion.id])
+  const currentSelected = selectedOptions[currentQuestion.id] || []
+  const isCurrentStepAnswered = currentSelected.length > 0
   const isLastStep = currentStepIndex === totalSteps - 1
 
   return (
@@ -222,31 +236,37 @@ export function QuizStepper({ questions, tableNumber }: QuizStepperProps) {
 
         {/* Question Section */}
         <section className="my-6">
-          <span className="text-[11px] font-sans font-bold uppercase tracking-wider text-primary block mb-1">
-            {currentQuestion.dimension === 'MOOD' && '1. Suasana Hati (Mood)'}
-            {currentQuestion.dimension === 'FLAVOR' && '2. Karakter Rasa (Flavor)'}
-            {currentQuestion.dimension === 'FORMAT' && '3. Format & Suhu Sajian (Format)'}
-          </span>
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className="text-[11px] font-sans font-bold uppercase tracking-wider text-primary">
+              {currentQuestion.dimension === 'MOOD' && '1. Suasana Hati (Mood)'}
+              {currentQuestion.dimension === 'FLAVOR' && '2. Karakter Rasa (Flavor)'}
+              {currentQuestion.dimension === 'FORMAT' && '3. Format & Suhu Sajian (Format)'}
+            </span>
+            <span className="text-[10.5px] font-sans font-semibold text-primary bg-primary-fixed/80 border border-primary/20 px-2 py-0.5 rounded-full shrink-0">
+              Bisa pilih lebih dari 1
+            </span>
+          </div>
+
           <h1 className="text-xl sm:text-2xl font-sans font-bold text-on-surface leading-snug">
             {currentQuestion.title}
           </h1>
-          <p className="text-xs text-on-surface-variant mt-1 mb-6 leading-relaxed">
+          <p className="text-xs text-on-surface-variant mt-1 mb-5 leading-relaxed">
             {currentQuestion.description}
           </p>
 
           {/* Options Grid */}
           <div className="space-y-3">
             {currentQuestion.options.map((opt) => {
-              const isSelected = selectedOptions[currentQuestion.id] === opt.id
+              const isSelected = currentSelected.includes(opt.id)
 
               return (
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => handleSelectOption(currentQuestion.id, opt.id)}
+                  onClick={() => handleToggleOption(currentQuestion.id, opt.id)}
                   className={`touch-target w-full p-4 rounded-2xl text-left flex items-center justify-between gap-3 transition-all ${
                     isSelected
-                      ? 'bg-surface-lowest border-2 border-primary shadow-xs'
+                      ? 'bg-surface-lowest border-2 border-primary shadow-xs ring-1 ring-primary/20'
                       : 'bg-surface-lowest/70 border border-outline-variant/60 hover:border-primary/40 hover:bg-surface-lowest'
                   }`}
                 >
@@ -264,15 +284,16 @@ export function QuizStepper({ questions, tableNumber }: QuizStepperProps) {
                     </div>
                   </div>
 
+                  {/* Checkbox Indikator Multi-Pilihan */}
                   <div
-                    className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                    className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${
                       isSelected
-                        ? 'border-primary bg-primary text-on-primary'
+                        ? 'border-primary bg-primary text-on-primary shadow-2xs'
                         : 'border-outline-variant bg-surface'
                     }`}
                   >
                     {isSelected && (
-                      <span className="text-[10px] font-bold leading-none">✓</span>
+                      <span className="text-xs font-bold leading-none">✓</span>
                     )}
                   </div>
                 </button>
@@ -311,7 +332,10 @@ export function QuizStepper({ questions, tableNumber }: QuizStepperProps) {
             onClick={handleSubmitQuiz}
             className="touch-target text-xs font-semibold px-6 shadow-xs rounded-full flex items-center gap-1.5"
           >
-            <span>Lihat Rekomendasi</span>
+            <span>
+              Lihat Rekomendasi
+              {currentSelected.length > 1 ? ` (${currentSelected.length})` : ''}
+            </span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Button>
         ) : (
@@ -322,7 +346,10 @@ export function QuizStepper({ questions, tableNumber }: QuizStepperProps) {
             onClick={handleNextStep}
             className="touch-target text-xs font-semibold px-6 rounded-full flex items-center gap-1.5"
           >
-            <span>Lanjut Langkah {currentStepIndex + 2}</span>
+            <span>
+              Lanjut Langkah {currentStepIndex + 2}
+              {currentSelected.length > 1 ? ` (${currentSelected.length})` : ''}
+            </span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Button>
         )}

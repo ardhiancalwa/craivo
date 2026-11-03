@@ -39,6 +39,23 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Cross-Browser Touch & Mobile Optimizations (Safari, Edge, Opera Mini, Chrome) */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a, input, select {
+  -webkit-touch-callout: none;
+}
+
+/* Prevent iOS Safari Automatic Viewport Zoom on Input Focus */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* Tabular Numerals for Consistent Currency and Timer Alignments */

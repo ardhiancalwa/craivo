@@ -253,7 +253,7 @@ describe('Recommendation Engine (Unit Tests)', () => {
       // Multi-dimensi (2 dimensi) menang atas single-dimensi (1 dimensi)
       expect(result.hero?.menuItem.id).toBe('item-multi-dim')
       expect(result.hero?.dimensionMatchCount).toBe(2)
-      expect(result.alternatives[0]?.menuItem.id).toBe('item-single-dim')
+      expect(result.topRecommendations[1]?.menuItem.id).toBe('item-single-dim')
     })
 
     it('Level 3: Skor & dimensi seri -> isPopular=true menang', () => {
@@ -392,7 +392,7 @@ describe('Recommendation Engine (Unit Tests)', () => {
       })
 
       expect(result.hero?.menuItem.id).toBe('a-item-first')
-      expect(result.alternatives[0]?.menuItem.id).toBe('z-item-last')
+      expect(result.topRecommendations[1]?.menuItem.id).toBe('z-item-last')
     })
   })
 
@@ -554,6 +554,166 @@ describe('Recommendation Engine (Unit Tests)', () => {
     ])
     expect(customReason).toContain('Manis Lembut')
     expect(customReason).toContain('Dingin & Segar')
+  })
+
+  it('12. Multi-Select Preference Scoring: Akumulasi bobot saat memilih lebih dari 1 opsi', () => {
+    // Pengguna memilih 2 opsi rasa: Manis (weight 3) DAN Creamy (weight 3)
+    const multiSelectWeights: SelectedOptionWeight[] = [
+      {
+        optionId: 'opt-flavor-manis',
+        tagId: 'tag-manis',
+        tagSlug: 'manis',
+        tagName: 'Manis',
+        dimension: 'FLAVOR',
+        weight: 3,
+      },
+      {
+        optionId: 'opt-flavor-creamy',
+        tagId: 'tag-creamy',
+        tagSlug: 'creamy',
+        tagName: 'Creamy Gurih',
+        dimension: 'FLAVOR',
+        weight: 3,
+      },
+      {
+        optionId: 'opt-format-dingin',
+        tagId: 'tag-dingin',
+        tagSlug: 'dingin',
+        tagName: 'Dingin & Segar',
+        dimension: 'FORMAT',
+        weight: 2,
+      },
+    ]
+
+    const result = calculateRecommendations({
+      menuItems: mockMenuItems,
+      selectedOptionWeights: multiSelectWeights,
+    })
+
+    expect(result.topRecommendations.length).toBeGreaterThanOrEqual(1)
+    // Matcha Oat Latte memiliki tag creamy + dingin + isPopular (3 + 2 + 1 = 6)
+    // Kopi Susu SELA memiliki tag manis + dingin + isPopular (3 + 2 + 1 = 6)
+    const topIds = result.topRecommendations.map((r) => r.menuItem.id)
+    expect(topIds).toContain('item-ks-sela')
+    expect(topIds).toContain('item-matcha')
+  })
+
+  it('13. Alokasi 3 Menu Rekomendasi Utama (topRecommendations) + 2 Alternatif (alternatives)', () => {
+    const catalog6Items: CandidateMenuItem[] = [
+      {
+        id: 'menu-1',
+        name: 'Menu 1',
+        description: '',
+        price: 20000,
+        image: null,
+        categoryId: 'c1',
+        categoryName: 'Kopi',
+        categorySlug: 'kopi',
+        isAvailable: true,
+        isPopular: true,
+        soldCount: 100,
+        isArchived: false,
+        tags: [{ id: 'tag-manis', slug: 'manis', name: 'Manis', dimension: 'FLAVOR' }],
+      },
+      {
+        id: 'menu-2',
+        name: 'Menu 2',
+        description: '',
+        price: 20000,
+        image: null,
+        categoryId: 'c1',
+        categoryName: 'Kopi',
+        categorySlug: 'kopi',
+        isAvailable: true,
+        isPopular: true,
+        soldCount: 90,
+        isArchived: false,
+        tags: [{ id: 'tag-manis', slug: 'manis', name: 'Manis', dimension: 'FLAVOR' }],
+      },
+      {
+        id: 'menu-3',
+        name: 'Menu 3',
+        description: '',
+        price: 20000,
+        image: null,
+        categoryId: 'c1',
+        categoryName: 'Kopi',
+        categorySlug: 'kopi',
+        isAvailable: true,
+        isPopular: true,
+        soldCount: 80,
+        isArchived: false,
+        tags: [{ id: 'tag-manis', slug: 'manis', name: 'Manis', dimension: 'FLAVOR' }],
+      },
+      {
+        id: 'menu-4',
+        name: 'Menu 4',
+        description: '',
+        price: 20000,
+        image: null,
+        categoryId: 'c1',
+        categoryName: 'Kopi',
+        categorySlug: 'kopi',
+        isAvailable: true,
+        isPopular: true,
+        soldCount: 70,
+        isArchived: false,
+        tags: [{ id: 'tag-manis', slug: 'manis', name: 'Manis', dimension: 'FLAVOR' }],
+      },
+      {
+        id: 'menu-5',
+        name: 'Menu 5',
+        description: '',
+        price: 20000,
+        image: null,
+        categoryId: 'c1',
+        categoryName: 'Kopi',
+        categorySlug: 'kopi',
+        isAvailable: true,
+        isPopular: true,
+        soldCount: 60,
+        isArchived: false,
+        tags: [{ id: 'tag-manis', slug: 'manis', name: 'Manis', dimension: 'FLAVOR' }],
+      },
+      {
+        id: 'menu-6',
+        name: 'Menu 6',
+        description: '',
+        price: 20000,
+        image: null,
+        categoryId: 'c1',
+        categoryName: 'Kopi',
+        categorySlug: 'kopi',
+        isAvailable: true,
+        isPopular: true,
+        soldCount: 50,
+        isArchived: false,
+        tags: [{ id: 'tag-manis', slug: 'manis', name: 'Manis', dimension: 'FLAVOR' }],
+      },
+    ]
+
+    const result = calculateRecommendations({
+      menuItems: catalog6Items,
+      selectedOptionWeights: [
+        {
+          optionId: 'opt-1',
+          tagId: 'tag-manis',
+          tagSlug: 'manis',
+          tagName: 'Manis',
+          dimension: 'FLAVOR',
+          weight: 3,
+        },
+      ],
+    })
+
+    // 3 Menu Rekomendasi Utama
+    expect(result.topRecommendations).toHaveLength(3)
+    expect(result.topRecommendations.map((r) => r.menuItem.id)).toEqual(['menu-1', 'menu-2', 'menu-3'])
+    expect(result.hero?.menuItem.id).toBe('menu-1')
+
+    // 2 Opsi Alternatif Serupa
+    expect(result.alternatives).toHaveLength(2)
+    expect(result.alternatives.map((r) => r.menuItem.id)).toEqual(['menu-4', 'menu-5'])
   })
 })
 

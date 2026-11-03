@@ -26,13 +26,27 @@ export function CurationAnalyzingView({
   const [progress, setProgress] = React.useState(35)
   const [stageIndex, setStageIndex] = React.useState(0)
 
-  // Extract selected mood and flavor for personalized chips
-  const moodPref = selectedPreferences.find(
-    (p) => p.dimension === 'MOOD' || p.questionTitle.toLowerCase().includes('suasana') || p.questionTitle.toLowerCase().includes('mood')
-  )
-  const flavorPref = selectedPreferences.find(
-    (p) => p.dimension === 'FLAVOR' || p.questionTitle.toLowerCase().includes('rasa') || p.questionTitle.toLowerCase().includes('selera')
-  )
+  // Extract selected mood and flavor for personalized chips (multi-preference support)
+  const moodLabels = selectedPreferences
+    .filter(
+      (p) =>
+        p.dimension === 'MOOD' ||
+        p.questionTitle.toLowerCase().includes('suasana') ||
+        p.questionTitle.toLowerCase().includes('mood')
+    )
+    .map((p) => p.optionLabel)
+
+  const flavorLabels = selectedPreferences
+    .filter(
+      (p) =>
+        p.dimension === 'FLAVOR' ||
+        p.questionTitle.toLowerCase().includes('rasa') ||
+        p.questionTitle.toLowerCase().includes('selera')
+    )
+    .map((p) => p.optionLabel)
+
+  const moodDisplayText = moodLabels.length > 0 ? moodLabels.join(', ') : 'Santai & Nyaman'
+  const flavorDisplayText = flavorLabels.length > 0 ? flavorLabels.join(', ') : 'Segar & Kaya Rasa'
 
   const steps = [
     'Mengecek ketersediaan bahan & racikan barista...',
@@ -164,8 +178,8 @@ export function CurationAnalyzingView({
             Meracik Pilihan
           </h1>
           <p className="text-xs sm:text-sm font-sans text-on-surface-variant max-w-[240px] leading-relaxed">
-            {moodPref?.optionLabel
-              ? `Menyelaraskan suasana ${moodPref.optionLabel} dengan racikan segar untuk Anda.`
+            {moodLabels.length > 0
+              ? `Menyelaraskan suasana ${moodDisplayText} dengan racikan segar untuk Anda.`
               : 'Menyelaraskan profil rasa dan racikan terbaik sesuai pilihan Anda.'}
           </p>
         </div>
@@ -203,7 +217,7 @@ export function CurationAnalyzingView({
               <span className="text-xs text-on-surface">
                 Mood terdeteksi:{' '}
                 <strong className="text-on-surface font-semibold">
-                  {moodPref?.optionLabel || 'Santai & Nyaman'}
+                  {moodDisplayText}
                 </strong>
               </span>
             </div>
@@ -215,7 +229,7 @@ export function CurationAnalyzingView({
               <span className="text-xs text-on-surface">
                 Profil rasa:{' '}
                 <strong className="text-on-surface font-semibold">
-                  {flavorPref?.optionLabel || 'Segar & Kaya Rasa'}
+                  {flavorDisplayText}
                 </strong>
               </span>
             </div>

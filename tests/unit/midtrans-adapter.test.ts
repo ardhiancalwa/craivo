@@ -5,6 +5,7 @@ import {
   formatMidtransOrderTime,
   chargeQris,
   getTransactionStatus,
+  simulateSandboxQrisPayment,
   MidtransGatewayError,
   MidtransTimeoutError,
 } from '@/lib/server/midtrans'
@@ -170,6 +171,78 @@ describe('Unit: Midtrans Core API Adapter (Sandbox Mode)', () => {
       expect(result.notFound).toBe(true)
       expect(result.statusCode).toBe('404')
       expect(result.transactionStatus).toBe('not_found')
+    })
+  })
+
+  describe('simulateSandboxQrisPayment()', () => {
+    it('berhasil memanggil flow simulator OpenAPI v2 Midtrans dan mengembalikan { success: true }', async () => {
+      const step1Html = `
+        <form role="form" action="payment/gopay" method="post">
+          <input name="referenceId" type="hidden" value="REF-12345">
+          <input name="exploreData" type="hidden" value="{&quot;test&quot;:1}">
+        </form>
+      `
+      const step2Html = `
+        <div class="content-body">
+          <input name="status" type="hidden" value="PAID">
+          <p>Status: PAID</p>
+        </div>
+      `
+
+      globalThis.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: async () => step1Html,
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: async () => step2Html,
+        } as Response)
+
+      const result = await simulateSandboxQrisPayment('https://api.sandbox.midtrans.com/v2/qris/123/qr-code')
+
+      expect(result.success).toBe(true)
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2)
+
+      const [url1, init1] = (globalThis.fetch as any).mock.calls[0]
+      expect(url1).toBe('https://simulator.sandbox.midtrans.com/v2/qris/payment')
+      expect(init1.method).toBe('POST')
+
+      const [url2, init2] = (globalThis.fetch as any).mock.calls[1]
+      expect(url2).toBe('https://simulator.sandbox.midtrans.com/v2/qris/payment/gopay')
+      expect(init2.method).toBe('POST')
+      expect(init2.body).toContain('REF-12345')
+      expect(init2.body).toContain('issuer=gopay')
+    })
+
+    it('mengembalikan success: false ketika simulator merespons unsuccessful', async () => {
+      const step1Html = `
+        <form role="form" action="payment/gopay" method="post">
+          <input name="referenceId" type="hidden" value="REF-FAIL">
+        </form>
+      `
+      const step2Html = `<p class="markdown-p">Transaction is <strong class="danger">unsuccessful</strong>.</p>`
+
+      globalThis.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: async () => step1Html,
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: async () => step2Html,
+        } as Response)
+
+      const result = await simulateSandboxQrisPayment('https://api.sandbox.midtrans.com/v2/qris/fail/qr-code')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('unsuccessful')
     })
   })
 })

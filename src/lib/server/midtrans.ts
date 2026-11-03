@@ -432,3 +432,95 @@ export async function cancelTransaction(
   }
 }
 
+/**
+ * Memanggil Midtrans Sandbox Simulator (v2 OpenAPI) untuk menyelesaikan simulasi pembayaran QRIS secara otomatis.
+ * Fungsi ini HANYA aktif dan diizinkan ketika MIDTRANS_IS_PRODUCTION === false.
+ */
+export async function simulateSandboxQrisPayment(
+  qrisUrl: string
+): Promise<{ success: boolean; error?: string }> {
+  const env = getServerEnv()
+  if (env.MIDTRANS_IS_PRODUCTION) {
+    throw new MidtransGatewayError(
+      'Simulasi pembayaran QRIS tidak diizinkan pada environment produksi live.',
+      403
+    )
+  }
+
+  if (!qrisUrl) {
+    throw new MidtransGatewayError('URL QRIS tidak valid untuk disimulasikan.', 400)
+  }
+
+  try {
+    // 1. Submit qrCodeUrl ke Midtrans Sandbox Simulator v2 (OpenAPI & non-OpenAPI)
+    const sim1 = await fetch('https://simulator.sandbox.midtrans.com/v2/qris/payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `qrCodeUrl=${encodeURIComponent(qrisUrl)}`,
+      signal: AbortSignal.timeout(10000),
+    })
+
+    if (!sim1.ok) {
+      return {
+        success: false,
+        error: `Simulator Midtrans merespons status ${sim1.status}`,
+      }
+    }
+
+    const html1 = await sim1.text()
+
+    if (html1.includes('unparsable') || html1.includes('unsuccessful')) {
+      return {
+        success: false,
+        error: 'Format QR tidak dikenali oleh Midtrans Simulator Sandbox.',
+      }
+    }
+
+    // 2. Ekstrak action form dan parameter tersembunyi (referenceId, exploreData)
+    const formActionMatch = html1.match(/<form[^>]*action="([^"]+)"/i)
+    const formAction = formActionMatch?.[1] || 'payment/gopay'
+    const targetUrl: string = formAction.startsWith('http')
+      ? formAction
+      : `https://simulator.sandbox.midtrans.com/v2/qris/${formAction}`
+
+    const inputs: Record<string, string> = {}
+    const inputRegex = /<input[^>]*name="([^"]+)"[^>]*value="([^"]*)"/gi
+    let match: RegExpExecArray | null
+    while ((match = inputRegex.exec(html1)) !== null) {
+      const key = match[1]
+      const val = match[2]
+      if (key && val !== undefined) {
+        inputs[key] = val.replace(/&quot;/g, '"').replace(/&amp;/g, '&')
+      }
+    }
+    inputs['issuer'] = 'gopay'
+
+    // 3. Submit konfirmasi bayar ke endpoint simulator acquirer (GoPay/ShopeePay)
+    const sim2 = await fetch(targetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(inputs).toString(),
+      signal: AbortSignal.timeout(10000),
+    })
+
+    const html2 = await sim2.text()
+    if (html2.includes('unsuccessful')) {
+      return {
+        success: false,
+        error: 'Simulasi pembayaran ditolak oleh simulator Midtrans (unsuccessful).',
+      }
+    }
+
+    return { success: true }
+  } catch (err: unknown) {
+    if (err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
+      throw new MidtransGatewayError('Simulasi pembayaran ke simulator Midtrans mengalami timeout.', 504)
+    }
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    }
+  }
+}
+
+

@@ -29,3 +29,49 @@ export function formatOrderNumber(date: Date, seq: number): string {
   return `ORD-${yyyy}${mm}${dd}-${sequence}`
 }
 
+/**
+ * Salin teks ke papan klip (clipboard) dengan dukungan lintas peramban
+ * (Safari iOS, Chrome, Edge, Opera Mini/Mobile, Android Webview).
+ * Menyediakan fallback document.execCommand bila navigator.clipboard dibatasi.
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  if (typeof window === 'undefined' || !text) return false
+
+  // 1. Coba navigator.clipboard standar (modern secure context)
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch {
+      // Lanjut ke fallback jika diblokir izin/sandbox
+    }
+  }
+
+  // 2. Fallback textarea element untuk iOS Safari & browser mobile/webview
+  try {
+    const textArea = document.createElement('textarea')
+    textArea.value = text
+    textArea.setAttribute('readonly', '')
+    textArea.style.position = 'fixed'
+    textArea.style.top = '0'
+    textArea.style.left = '0'
+    textArea.style.width = '2em'
+    textArea.style.height = '2em'
+    textArea.style.padding = '0'
+    textArea.style.border = 'none'
+    textArea.style.outline = 'none'
+    textArea.style.boxShadow = 'none'
+    textArea.style.background = 'transparent'
+    textArea.style.fontSize = '16px' // Mencegah iOS auto-zoom
+    document.body.appendChild(textArea)
+    textArea.focus()
+    textArea.select()
+    const successful = document.execCommand('copy')
+    document.body.removeChild(textArea)
+    return successful
+  } catch {
+    return false
+  }
+}
+
+

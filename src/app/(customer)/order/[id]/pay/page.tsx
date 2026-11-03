@@ -11,6 +11,7 @@ import {
 import { OrderAccessDenied } from '@/components/order/order-access-denied'
 import { PaymentClientView } from './payment-client-view'
 import { formatIDR } from '@/lib/utils'
+import { getServerEnv } from '@/lib/server/env'
 
 export const dynamic = 'force-dynamic'
 
@@ -104,6 +105,7 @@ export default async function OrderPaymentPage({ params }: PageProps) {
             qrString={qrisData.qrisString}
             expiresAt={qrisData.expiresAt}
             initialPaymentStatus={qrisData.status}
+            isProduction={getServerEnv().MIDTRANS_IS_PRODUCTION}
           />
         ) : null}
 

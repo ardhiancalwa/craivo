@@ -71,6 +71,7 @@ export interface RecommendationResultItem {
 
 export interface RecommendationResponse {
   hero: RecommendationResultItem | null
+  topRecommendations: RecommendationResultItem[]
   alternatives: RecommendationResultItem[]
   isFallback: boolean
   fallbackReason?: string
@@ -137,6 +138,8 @@ export interface RecommendationEngineParams {
   selectedOptionWeights: SelectedOptionWeight[]
   /** Ambang batas skor minimum untuk kurasi (default: 3 sesuai ADR-0006) */
   minScoreThreshold?: number
+  /** Jumlah maksimal menu rekomendasi utama (default: 3) */
+  maxTopRecommendations?: number
   /** Jumlah maksimal alternatif (default: 2) */
   maxAlternatives?: number
 }
@@ -149,6 +152,7 @@ export function calculateRecommendations({
   menuItems,
   selectedOptionWeights,
   minScoreThreshold = 3,
+  maxTopRecommendations = 3,
   maxAlternatives = 2,
 }: RecommendationEngineParams): RecommendationResponse {
   const startTime = performance.now()
@@ -165,6 +169,7 @@ export function calculateRecommendations({
     const duration = performance.now() - startTime
     return {
       hero: null,
+      topRecommendations: [],
       alternatives: [],
       isFallback: true,
       fallbackReason: EMPTY_CATALOG_REASON,
@@ -175,10 +180,15 @@ export function calculateRecommendations({
   }
 
   // Petakan tag yang dipilih ke dalam Map untuk lookup O(1)
-  // tagId -> { weight, dimension, name, slug }
+  // Akumulasikan bobot jika pengguna memilih beberapa opsi yang memiliki tag identik (multi-select)
   const selectedTagMap = new Map<string, SelectedOptionWeight>()
   for (const optWeight of selectedOptionWeights) {
-    selectedTagMap.set(optWeight.tagId, optWeight)
+    const existing = selectedTagMap.get(optWeight.tagId)
+    if (existing) {
+      existing.weight += optWeight.weight
+    } else {
+      selectedTagMap.set(optWeight.tagId, { ...optWeight })
+    }
   }
 
   // 2. Evaluasi skor untuk setiap kandidat yang tersedia
@@ -241,14 +251,19 @@ export function calculateRecommendations({
   )
 
   let hero: RecommendationResultItem | null = null
+  let topRecommendations: RecommendationResultItem[] = []
   let alternatives: RecommendationResultItem[] = []
   let isFallback = false
   let fallbackReason: string | undefined
 
   if (qualifiedItems.length > 0) {
-    // Kurasi Berhasil
-    hero = qualifiedItems[0] ?? null
-    alternatives = qualifiedItems.slice(1, 1 + maxAlternatives)
+    // Kurasi Berhasil: Ambil 3 rekomendasi utama & 2 opsi alternatif
+    topRecommendations = qualifiedItems.slice(0, maxTopRecommendations)
+    hero = topRecommendations[0] ?? null
+    alternatives = qualifiedItems.slice(
+      maxTopRecommendations,
+      maxTopRecommendations + maxAlternatives
+    )
   } else {
     // Fallback Aktif: Ambil menu favorit terpopuler yang tersedia
     isFallback = true
@@ -282,14 +297,19 @@ export function calculateRecommendations({
       })
     )
 
-    hero = fallbackItems[0] ?? null
-    alternatives = fallbackItems.slice(1, 1 + maxAlternatives)
+    topRecommendations = fallbackItems.slice(0, maxTopRecommendations)
+    hero = topRecommendations[0] ?? null
+    alternatives = fallbackItems.slice(
+      maxTopRecommendations,
+      maxTopRecommendations + maxAlternatives
+    )
   }
 
   const duration = performance.now() - startTime
 
   return {
     hero,
+    topRecommendations,
     alternatives,
     isFallback,
     fallbackReason,
