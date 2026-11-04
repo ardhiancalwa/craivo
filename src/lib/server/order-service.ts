@@ -13,7 +13,7 @@ import { completeIdempotencyRecord, failIdempotencyRecord } from './idempotency'
 
 export interface CreateOrderParams {
   tableNumber: string
-  paymentMethod: 'QRIS' | 'CASH'
+  paymentMethod: 'QRIS' | 'CASH' | 'MANUAL_QRIS' | 'MANUAL_TRANSFER'
   customerNotes?: string
   quoteToken: string
   items: QuoteItemInput[]
@@ -193,10 +193,10 @@ export async function createOrderFromQuote(
 
     // 5. Parameter Waktu & Status Awal Sesuai Keputusan Desain (ADR-0004 & DEC-014)
     const now = new Date()
-    const isQris = paymentMethod === 'QRIS'
-    const paymentStatus = isQris ? 'UNPAID' : 'WAITING_CASHIER'
-    // Batas waktu: QRIS 15 menit, CASH 20 menit
-    const timeoutMinutes = isQris ? 15 : 20
+    const isMidtransQris = paymentMethod === 'QRIS'
+    const paymentStatus = isMidtransQris ? 'UNPAID' : 'WAITING_CASHIER'
+    // Batas waktu: QRIS Dinamis 15 menit, lainnya 20 menit
+    const timeoutMinutes = isMidtransQris ? 15 : 20
     const expiresAt = new Date(now.getTime() + timeoutMinutes * 60 * 1000)
 
     const datePrefix = await getJakartaDatePrefix()
@@ -352,14 +352,14 @@ export async function createOrderFromQuote(
             })),
           })),
           nextAction:
-            paymentMethod === 'QRIS'
+            paymentMethod === 'CASH'
               ? {
-                  type: 'PROCEED_PAYMENT',
+                  type: 'AWAIT_CASHIER',
                   url: `/order/${createdOrder.id}/pay`,
                 }
               : {
-                  type: 'AWAIT_CASHIER',
-                  url: `/order/${createdOrder.id}/track`,
+                  type: 'PROCEED_PAYMENT',
+                  url: `/order/${createdOrder.id}/pay`,
                 },
         }
 

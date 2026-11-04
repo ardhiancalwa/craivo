@@ -17,6 +17,7 @@ const CreateMenuItemSchema = z.object({
   sortOrder: z.number().int().default(0),
   tagIds: z.array(z.string()).default([]),
   modifierGroupIds: z.array(z.string()).default([]),
+  modifierPriceOverrides: z.record(z.string(), z.number().int().min(0)).optional().default({}),
 })
 
 export async function GET(request: Request) {
@@ -76,6 +77,7 @@ export async function GET(request: Request) {
       sortOrder: it.sortOrder,
       tags: it.tags.map((t) => ({ id: t.tag.id, name: t.tag.name, dimension: t.tag.dimension })),
       modifierGroupIds: it.modifierGroups.map((mg) => mg.groupId),
+      modifierPriceOverrides: (it.modifierPriceOverrides as Record<string, number> | null) || {},
     }))
 
     return NextResponse.json({ success: true, data: transformed })
@@ -137,6 +139,7 @@ export async function POST(request: Request) {
           image: data.image || null,
           isPopular: data.isPopular,
           sortOrder: data.sortOrder,
+          modifierPriceOverrides: data.modifierPriceOverrides || {},
           isAvailable: true,
           isArchived: false,
         },

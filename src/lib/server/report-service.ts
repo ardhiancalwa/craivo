@@ -38,6 +38,7 @@ export interface TurnoverReportResponse {
     cash: TurnoverBreakdown
   }
   topSellingItems: TopSellingItem[]
+  leastSellingItems: TopSellingItem[]
 }
 
 export interface TransactionFilterParams {
@@ -165,14 +166,36 @@ export async function getTurnoverReport(
     }
   }
 
-  const topSellingItems: TopSellingItem[] = Array.from(itemMap.entries())
-    .map(([name, data]) => ({
-      name,
-      quantitySold: data.quantity,
-      totalRevenue: data.revenue,
-    }))
+  // Masukkan juga menu item aktif yang belum terjual (0 sales) agar dapat terdeteksi sebagai slow-moving
+  try {
+    const activeMenuItems = await prisma.menuItem.findMany({
+      where: { isArchived: false },
+      select: { name: true },
+    })
+    for (const m of activeMenuItems) {
+      if (!itemMap.has(m.name)) {
+        itemMap.set(m.name, { quantity: 0, revenue: 0 })
+      }
+    }
+  } catch {
+    // Non-blocking fallback jika query katalog offline
+  }
+
+  const allItemsList: TopSellingItem[] = Array.from(itemMap.entries()).map(([name, data]) => ({
+    name,
+    quantitySold: data.quantity,
+    totalRevenue: data.revenue,
+  }))
+
+  // Top 3 paling sering dibeli (terbanyak kuantitasnya)
+  const topSellingItems = [...allItemsList]
     .sort((a, b) => b.quantitySold - a.quantitySold || b.totalRevenue - a.totalRevenue)
-    .slice(0, 10)
+    .slice(0, 3)
+
+  // Top 3 paling jarang dibeli (paling sedikit kuantitasnya)
+  const leastSellingItems = [...allItemsList]
+    .sort((a, b) => a.quantitySold - b.quantitySold || a.totalRevenue - b.totalRevenue)
+    .slice(0, 3)
 
   return {
     period: {
@@ -192,6 +215,7 @@ export async function getTurnoverReport(
       cash: cashBreakdown,
     },
     topSellingItems,
+    leastSellingItems,
   }
 }
 

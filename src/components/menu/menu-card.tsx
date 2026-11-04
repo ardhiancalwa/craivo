@@ -18,6 +18,9 @@ export function MenuCard({ item, onOpenModifier }: MenuCardProps) {
   const [imageError, setImageError] = React.useState(false)
   const isSoldOut = !item.isAvailable
   const hasModifiers = item.modifierGroups && item.modifierGroups.length > 0
+  const hasPriceDelta = Boolean(
+    item.modifierGroups?.some((group) => group.options?.some((opt) => opt.price > 0))
+  )
   const cartQty = getItemQuantity(item.id)
 
   const handleCardClick = () => {
@@ -110,9 +113,14 @@ export function MenuCard({ item, onOpenModifier }: MenuCardProps) {
 
       {/* Bottom: Price & Action */}
       <div className="mt-3 flex items-center justify-between pt-1">
-        <span className="text-xs font-semibold tabular-nums text-primary font-price-tabular">
-          {formatIDR(item.price)}
-        </span>
+        <div className="flex items-baseline gap-1">
+          {hasPriceDelta && (
+            <span className="text-[10px] font-normal text-on-surface-variant">Mulai</span>
+          )}
+          <span className="text-xs font-semibold tabular-nums text-primary font-price-tabular">
+            {formatIDR(item.price)}
+          </span>
+        </div>
 
         {isSoldOut ? (
           <button

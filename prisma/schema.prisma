@@ -6,6 +6,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 enum OrderStatus {
@@ -34,11 +35,15 @@ enum IdempotencyState {
 enum PaymentMethod {
   QRIS
   CASH
+  MANUAL_QRIS
+  MANUAL_TRANSFER
 }
 
 enum PaymentGateway {
   MIDTRANS
   MANUAL_CASH
+  MANUAL_QRIS
+  MANUAL_TRANSFER
 }
 
 enum StaffRole {
@@ -132,8 +137,9 @@ model MenuItem {
   soldCount      Int                     @default(0)
   isArchived     Boolean                 @default(false) // Soft-delete flag
   deletedAt      DateTime? // Soft-delete timestamp
-  sortOrder      Int                     @default(0) // Urutan tampilan menu
-  createdAt      DateTime                @default(now())
+  sortOrder               Int                     @default(0) // Urutan tampilan menu
+  modifierPriceOverrides  Json?                   @default("{}") @map("modifier_price_overrides")
+  createdAt               DateTime                @default(now())
   updatedAt      DateTime                @updatedAt
   tags           MenuItemTag[]
   modifierGroups MenuItemModifierGroup[]
@@ -277,6 +283,18 @@ model CravioConfig {
   cashTimeoutMinutes Int      @default(20) // Batas toleransi kasir tunai
   quizVersion        Int      @default(1) // Versi konfigurasi kuis
   productionDomain   String?  // Domain produksi permanen (e.g. "https://sela.cravio.id")
+
+  // Metode Pembayaran Fleksibel
+  enableMidtransQris    Boolean  @default(true)
+  enableCash            Boolean  @default(true)
+  enableManualQris      Boolean  @default(false)
+  manualQrisImageUrl    String?
+  manualQrisName        String?  @default("QRIS Kafe")
+  enableManualTransfer  Boolean  @default(false)
+  manualTransferBank    String?
+  manualTransferAccount String?
+  manualTransferName    String?
+
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -341,6 +359,7 @@ model Order {
   cancelledAt          DateTime? // Timestamp jika pesanan dibatalkan
   completedAt          DateTime? // Timestamp saat pesanan disajikan
   expiresAt            DateTime? // Batas akhir pembayaran (QRIS / Tunai)
+  paymentProofUrl      String? // URL bukti transfer / struk bayar QRIS toko
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
   items                OrderItem[]
@@ -511,3 +530,23 @@ model RateLimitRecord {
   @@index([expireAt])
   @@map("rate_limit_records")
 }
+
+model CashflowProfile {
+  id                  String   @id @default(cuid())
+  periodName          String   @default("Operasional Bulanan")
+  initialCapital      Int      @default(50000000) // 1. Modal awal (Rp50.000.000)
+  rawMaterialCost     Int      @default(15000000) // 2. Harga bahan (Rp15.000.000)
+  operationalCost     Int      @default(4500000)  // 3. Biaya operasional (Rp4.500.000)
+  overheadCost        Int      @default(6000000)  // 4. Overhead / Overheat (Rp6.000.000)
+  salaryStaff         Int      @default(8000000)  // 7a. Biaya gaji staf kafe (Rp8.000.000)
+  salaryOwner         Int      @default(4000000)  // 7b. Gaji / owner draw (Rp4.000.000)
+  targetProductionQty Int      @default(1500)     // 8. Total kuantitas produksi (1.500 cup)
+  shareLossPercentage Float    @default(5.0)      // 9. Share loss susut (5.0%)
+  sellingPricePerUnit Int      @default(28000)    // 6. Rata-rata harga jual per unit (Rp28.000)
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("cashflow_profiles")
+}
+

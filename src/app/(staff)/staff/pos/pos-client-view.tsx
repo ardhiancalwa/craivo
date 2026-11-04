@@ -13,7 +13,7 @@ import { PosOrderSkeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import { useRealtimeStream, type StreamConnectionStatus } from '@/lib/hooks/use-realtime-stream'
 import { formatIDR, cn } from '@/lib/utils'
-import { Check, Printer, Clock, AlertTriangle } from 'lucide-react'
+import { Check, Printer, Clock, AlertTriangle, Search, Image as ImageIcon } from 'lucide-react'
 
 export type PosTab = 'cash_queue' | 'paid_history' | 'cancelled_history'
 
@@ -63,6 +63,7 @@ export interface PosOrder {
   orderStatus: string
   paymentStatus: string
   paymentMethod: string
+  paymentProofUrl: string | null
   createdAt: string
   paidAt: string | null
   updatedAt: string
@@ -122,6 +123,8 @@ export function PosClientView() {
   // Modal States
   const [confirmOrder, setConfirmOrder] = React.useState<PosOrder | null>(null)
   const [isConfirming, setIsConfirming] = React.useState(false)
+  const [quickConfirmingId, setQuickConfirmingId] = React.useState<string | null>(null)
+  const [previewProofOrder, setPreviewProofOrder] = React.useState<PosOrder | null>(null)
 
   const [cancelOrder, setCancelOrder] = React.useState<PosOrder | null>(null)
   const [cancelReason, setCancelReason] = React.useState('')
@@ -248,6 +251,42 @@ export function PosClientView() {
       showToast('Terjadi gangguan jaringan saat konfirmasi pembayaran.', 'error')
     } finally {
       setIsConfirming(false)
+    }
+  }
+
+  // Handle Quick Confirm 1-Click (Fast cashier approval for busy hours / 50+ queue)
+  const handleQuickConfirm = async (order: PosOrder) => {
+    if (quickConfirmingId) return
+    setQuickConfirmingId(order.id)
+    try {
+      const res = await fetch(`/api/staff/orders/${order.id}/confirm-cash`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': crypto.randomUUID(),
+        },
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        showToast(
+          `Pesanan #${order.orderNumber} (Meja ${order.tableNumber}) LUNAS & diteruskan ke Dapur.`,
+          'success'
+        )
+        // Optimistic removal from queue
+        setOrders((prev) => prev.filter((o) => o.id !== order.id))
+        setCounts((prev) => ({
+          ...prev,
+          cashQueue: Math.max(0, prev.cashQueue - 1),
+          paidHistory: prev.paidHistory + 1,
+        }))
+        fetchOrders(false)
+      } else {
+        showToast(data.message || 'Gagal mengonfirmasi pembayaran.', 'error')
+      }
+    } catch {
+      showToast('Terjadi gangguan jaringan saat konfirmasi pembayaran.', 'error')
+    } finally {
+      setQuickConfirmingId(null)
     }
   }
 
@@ -531,11 +570,19 @@ export function PosClientView() {
                           className={cn(
                             'text-[10px] font-sans font-bold px-2 py-0.5 rounded-full uppercase tracking-wider',
                             order.paymentMethod === 'CASH'
-                              ? 'bg-primary/10 text-primary'
-                              : 'bg-blue-500/10 text-blue-700'
+                              ? 'bg-amber-500/10 text-amber-800 border border-amber-300'
+                              : order.paymentMethod === 'MANUAL_QRIS'
+                                ? 'bg-teal-500/10 text-teal-800 border border-teal-300'
+                                : order.paymentMethod === 'MANUAL_TRANSFER'
+                                  ? 'bg-indigo-500/10 text-indigo-800 border border-indigo-300'
+                                  : 'bg-blue-500/10 text-blue-700'
                           )}
                         >
-                          {order.paymentMethod}
+                          {order.paymentMethod === 'MANUAL_QRIS'
+                            ? 'QRIS TOKO'
+                            : order.paymentMethod === 'MANUAL_TRANSFER'
+                              ? 'TRANSFER'
+                              : order.paymentMethod}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-2">
@@ -564,6 +611,57 @@ export function PosClientView() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Payment Proof Thumbnail Bar */}
+                  {order.paymentProofUrl && (
+                    <div className="mt-3 p-2.5 rounded-xl bg-surface-container/70 border border-emerald-300/60 flex items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewProofOrder(order)}
+                          className="relative w-12 h-12 rounded-lg overflow-hidden border border-outline-variant bg-white shrink-0 hover:opacity-85 transition-opacity cursor-pointer group"
+                          title="Klik untuk memperbesar bukti transfer"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={order.paymentProofUrl}
+                            alt="Bukti Transfer"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                        </button>
+                        <div className="min-w-0">
+                          <span className="text-[11px] font-bold text-emerald-800 flex items-center gap-1">
+                            <span>✓</span>
+                            <span>Bukti Bayar Diunggah</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewProofOrder(order)}
+                            className="text-[10px] text-primary font-bold hover:underline block text-left cursor-pointer"
+                          >
+                            Perbesar Gambar →
+                          </button>
+                        </div>
+                      </div>
+
+                      {order.paymentStatus === 'WAITING_CASHIER' && (
+                        <button
+                          type="button"
+                          onClick={() => handleQuickConfirm(order)}
+                          disabled={quickConfirmingId === order.id}
+                          className="touch-target px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-sans font-bold text-xs flex items-center gap-1 shadow-2xs active:scale-95 transition-all disabled:opacity-50 shrink-0 cursor-pointer"
+                          title="Konfirmasi Lunas langsung dalam 1 klik"
+                        >
+                          {quickConfirmingId === order.id ? (
+                            <Spinner size="sm" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5" />
+                          )}
+                          <span>Acc Lunas</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   {/* Customer Barista Notes */}
                   {order.customerNotes && (
@@ -628,11 +726,32 @@ export function PosClientView() {
                     <>
                       <button
                         type="button"
-                        className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white font-sans font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
-                        onClick={() => setConfirmOrder(order)}
+                        disabled={quickConfirmingId === order.id}
+                        className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white font-sans font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                        onClick={() => handleQuickConfirm(order)}
                       >
-                        <Check className="w-4 h-4" />
-                        <span>Konfirmasi Uang Masuk</span>
+                        {quickConfirmingId === order.id ? (
+                          <Spinner size="sm" />
+                        ) : (
+                          <Check className="w-4 h-4" />
+                        )}
+                        <span>
+                          {quickConfirmingId === order.id
+                            ? 'Menyimpan...'
+                            : order.paymentMethod === 'MANUAL_QRIS'
+                              ? 'Konfirmasi QRIS Lunas'
+                              : order.paymentMethod === 'MANUAL_TRANSFER'
+                                ? 'Konfirmasi Transfer Lunas'
+                                : 'Konfirmasi Uang Masuk'}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmOrder(order)}
+                        className="p-2.5 border border-outline-variant bg-surface-lowest rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all shadow-2xs active:scale-95 flex items-center justify-center cursor-pointer"
+                        title="Periksa rincian sebelum konfirmasi"
+                      >
+                        <Search className="w-4 h-4" />
                       </button>
                       <Link
                         href={`/staff/orders/${order.id}/print?type=cashier`}
@@ -719,18 +838,28 @@ export function PosClientView() {
         </div>
       )}
 
-      {/* Modal 1: Dialog Konfirmasi Uang Fisik */}
+      {/* Modal 1: Dialog Konfirmasi Pembayaran Kasir */}
       <Dialog
         isOpen={!!confirmOrder}
         onClose={handleCloseConfirmModal}
-        title="Konfirmasi Uang Fisik Tunai"
+        title={
+          confirmOrder?.paymentMethod === 'MANUAL_QRIS'
+            ? 'Konfirmasi Pembayaran QRIS Kafe'
+            : confirmOrder?.paymentMethod === 'MANUAL_TRANSFER'
+              ? 'Konfirmasi Transfer Bank Kafe'
+              : 'Konfirmasi Uang Fisik Tunai'
+        }
         maxWidth="md"
       >
         {confirmOrder && (
           <div className="space-y-4 pt-2">
             <div className="p-4 rounded-xl bg-surface-container border border-outline-variant text-center">
               <span className="text-xs text-on-surface-variant font-semibold block uppercase tracking-wider font-sans">
-                Total Tagihan Tunai
+                {confirmOrder.paymentMethod === 'MANUAL_QRIS'
+                  ? 'Total Tagihan QRIS Kafe'
+                  : confirmOrder.paymentMethod === 'MANUAL_TRANSFER'
+                    ? 'Total Tagihan Transfer Kafe'
+                    : 'Total Tagihan Tunai'}
               </span>
               <span className="text-2xl md:text-3xl font-bold text-accent font-sans block mt-1">
                 {formatIDR(confirmOrder.totalAmount)}
@@ -739,16 +868,70 @@ export function PosClientView() {
                 <span className="font-mono font-bold">#{confirmOrder.orderNumber}</span>
                 <span>•</span>
                 <span className="font-semibold">Meja {confirmOrder.tableNumber}</span>
+                <span>•</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-lowest border border-outline-variant">
+                  {confirmOrder.paymentMethod === 'MANUAL_QRIS'
+                    ? 'QRIS TOKO'
+                    : confirmOrder.paymentMethod === 'MANUAL_TRANSFER'
+                      ? 'TRANSFER'
+                      : 'TUNAI'}
+                </span>
               </div>
             </div>
 
+            {/* Pratinjau Bukti Pembayaran Tamu jika ada */}
+            {confirmOrder.paymentProofUrl && (
+              <div className="p-3 bg-surface-container/60 rounded-xl border border-outline-variant text-center space-y-2">
+                <span className="text-[11px] font-bold text-on-surface block">
+                  Foto Bukti Transfer dari Pelanggan:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPreviewProofOrder(confirmOrder)}
+                  className="relative group inline-block cursor-pointer focus:outline-none"
+                  title="Klik untuk memperbesar"
+                >
+                  <img
+                    src={confirmOrder.paymentProofUrl}
+                    alt="Bukti Transfer"
+                    className="max-h-40 rounded-lg object-contain mx-auto shadow-xs border border-outline-variant group-hover:scale-[1.02] transition-transform"
+                  />
+                  <span className="text-[11px] text-primary font-bold block mt-1 hover:underline">
+                    🔍 Perbesar Gambar
+                  </span>
+                </button>
+              </div>
+            )}
+
             <p className="text-xs md:text-sm text-brand/80 leading-relaxed">
-              Pastikan uang tunai fisik sebesar{' '}
-              <strong className="text-brand font-bold">
-                {formatIDR(confirmOrder.totalAmount)}
-              </strong>{' '}
-              telah Anda terima dan dihitung secara tepat sebelum mengonfirmasi. Pesanan akan langsung
-              diteruskan ke layar antrean dapur (KDS).
+              {confirmOrder.paymentMethod === 'MANUAL_QRIS' ? (
+                <>
+                  Pastikan dana QRIS sebesar{' '}
+                  <strong className="text-brand font-bold">
+                    {formatIDR(confirmOrder.totalAmount)}
+                  </strong>{' '}
+                  telah masuk ke mutasi/notifikasi akun QRIS Kafe sebelum mengonfirmasi. Pesanan akan
+                  langsung diteruskan ke layar antrean dapur (KDS).
+                </>
+              ) : confirmOrder.paymentMethod === 'MANUAL_TRANSFER' ? (
+                <>
+                  Pastikan transfer rekening sebesar{' '}
+                  <strong className="text-brand font-bold">
+                    {formatIDR(confirmOrder.totalAmount)}
+                  </strong>{' '}
+                  telah masuk ke rekening kafe sebelum mengonfirmasi. Pesanan akan langsung diteruskan ke
+                  layar antrean dapur (KDS).
+                </>
+              ) : (
+                <>
+                  Pastikan uang tunai fisik sebesar{' '}
+                  <strong className="text-brand font-bold">
+                    {formatIDR(confirmOrder.totalAmount)}
+                  </strong>{' '}
+                  telah Anda terima dan dihitung secara tepat sebelum mengonfirmasi. Pesanan akan langsung
+                  diteruskan ke layar antrean dapur (KDS).
+                </>
+              )}
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
@@ -769,7 +952,13 @@ export function PosClientView() {
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-sans font-bold min-w-[160px] rounded-xl shadow-sm active:scale-95"
               >
                 {isConfirming ? <Spinner size="sm" className="mr-2" /> : <Check className="w-4 h-4 mr-1.5" />}
-                {isConfirming ? 'Menyimpan...' : 'Konfirmasi Diterima'}
+                {isConfirming
+                  ? 'Menyimpan...'
+                  : confirmOrder.paymentMethod === 'MANUAL_QRIS'
+                    ? 'Konfirmasi QRIS Lunas'
+                    : confirmOrder.paymentMethod === 'MANUAL_TRANSFER'
+                      ? 'Konfirmasi Transfer Lunas'
+                      : 'Konfirmasi Diterima'}
               </Button>
             </div>
           </div>
@@ -938,6 +1127,101 @@ export function PosClientView() {
                 {isRefunding ? <Spinner size="sm" className="mr-2" /> : null}
                 {isRefunding ? 'Menyimpan...' : 'Simpan Catatan Refund'}
               </Button>
+            </div>
+          </div>
+        )}
+      </Dialog>
+
+      {/* Modal 4: Lightbox Pratinjau Bukti Transfer Pelanggan */}
+      <Dialog
+        isOpen={!!previewProofOrder}
+        onClose={() => setPreviewProofOrder(null)}
+        title={
+          <div className="flex items-center gap-2">
+            <ImageIcon className="w-5 h-5 text-primary" />
+            <span>
+              Bukti Transfer #{previewProofOrder?.orderNumber} (Meja {previewProofOrder?.tableNumber})
+            </span>
+          </div>
+        }
+        maxWidth="lg"
+      >
+        {previewProofOrder && (
+          <div className="space-y-4 pt-1">
+            <div className="flex items-center justify-between text-xs bg-surface-container px-3.5 py-2.5 rounded-xl border border-outline-variant">
+              <div className="flex items-center gap-2">
+                <span className="text-on-surface-variant font-medium">Metode:</span>
+                <span className="font-bold text-on-surface px-2 py-0.5 rounded-full bg-surface-lowest border border-outline-variant text-[11px]">
+                  {previewProofOrder.paymentMethod === 'MANUAL_QRIS'
+                    ? 'QRIS TOKO'
+                    : previewProofOrder.paymentMethod === 'MANUAL_TRANSFER'
+                      ? 'TRANSFER'
+                      : previewProofOrder.paymentMethod}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-on-surface-variant font-medium">Total:</span>
+                <span className="font-bold text-primary font-mono text-sm">
+                  {formatIDR(previewProofOrder.totalAmount)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-center bg-black/5 rounded-xl p-3 border border-outline-variant max-h-[60vh] overflow-auto">
+              {previewProofOrder.paymentProofUrl ? (
+                <img
+                  src={previewProofOrder.paymentProofUrl}
+                  alt={`Bukti Transfer #${previewProofOrder.orderNumber}`}
+                  className="max-h-[55vh] w-auto object-contain rounded-lg shadow-sm"
+                />
+              ) : (
+                <p className="text-xs text-on-surface-variant p-8">Tidak ada berkas bukti gambar.</p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-border">
+              {previewProofOrder.paymentProofUrl ? (
+                <a
+                  href={previewProofOrder.paymentProofUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary font-bold hover:underline inline-flex items-center gap-1"
+                >
+                  Buka Gambar Asli ↗
+                </a>
+              ) : (
+                <span />
+              )}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPreviewProofOrder(null)}
+                  className="rounded-xl px-4 font-bold text-xs"
+                >
+                  Tutup
+                </Button>
+                {previewProofOrder.paymentStatus === 'UNPAID' && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      const target = previewProofOrder
+                      setPreviewProofOrder(null)
+                      handleQuickConfirm(target)
+                    }}
+                    disabled={quickConfirmingId === previewProofOrder.id}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs px-4"
+                  >
+                    {quickConfirmingId === previewProofOrder.id ? (
+                      <Spinner size="sm" className="mr-1.5" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5 mr-1" />
+                    )}
+                    ✓ Konfirmasi Lunas Sekarang
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}

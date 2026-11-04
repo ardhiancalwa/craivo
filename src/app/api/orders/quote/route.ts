@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createOrderQuote, QuoteServiceError } from '@/lib/server/quote-service'
-import { resolveGuestSession } from '@/lib/server/guest-session'
+import { resolveGuestSession, ensureGuestSessionForTable } from '@/lib/server/guest-session'
 import { verifyCsrfOrigin } from '@/lib/server/csrf'
 
 export const dynamic = 'force-dynamic'
@@ -70,18 +70,38 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Resolve sesi tamu opsional untuk mengikat quote ke gsid jika sudah ada
-    const guestSession = await resolveGuestSession(req)
+    // Resolve sesi tamu (dengan auto-recovery untuk meja valid)
+    const ensured = await ensureGuestSessionForTable(parsed.data.tableNumber, req)
+    const guestSession = ensured?.session || (await resolveGuestSession(req))
 
     const quote = await createOrderQuote({
       ...parsed.data,
       guestSessionId: guestSession?.id,
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: quote,
     })
+
+    if (ensured?.isNewSession && ensured.rawSessionToken) {
+      const isProduction = process.env.NODE_ENV === 'production'
+      response.cookies.set('cravio_guest', ensured.rawSessionToken, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: isProduction,
+        maxAge: 60 * 60 * 12,
+      })
+      response.cookies.set('cravio_table', ensured.session.table.tableNumber, {
+        path: '/',
+        httpOnly: false,
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 12,
+      })
+    }
+
+    return response
   } catch (error) {
     if (error instanceof QuoteServiceError) {
       return NextResponse.json(

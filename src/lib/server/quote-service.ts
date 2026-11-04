@@ -222,10 +222,19 @@ export async function calculateCartItems(
       }
     >()
 
+    const overrides = (dbItem.modifierPriceOverrides as Record<string, number> | null) || {}
+
     for (const mg of dbItem.modifierGroups) {
       for (const opt of mg.group.options) {
+        const effectivePrice =
+          typeof overrides[opt.id] === 'number' ? (overrides[opt.id] as number) : opt.price
         allowedOptionsMap.set(opt.id, {
-          option: opt,
+          option: {
+            id: opt.id,
+            name: opt.name,
+            price: effectivePrice,
+            isAvailable: opt.isAvailable,
+          },
           group: mg.group,
         })
       }

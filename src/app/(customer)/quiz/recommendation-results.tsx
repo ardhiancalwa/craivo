@@ -288,6 +288,9 @@ export function RecommendationResults({
                           {recItem.menuItem.name}
                         </h3>
                         <span className="font-price-tabular text-sm sm:text-base font-bold text-primary shrink-0 tabular-nums">
+                          {recItem.menuItem.modifierGroups?.some((g) => g.options?.some((o) => o.price > 0)) && (
+                            <span className="text-xs font-normal text-on-surface-variant mr-1">Mulai</span>
+                          )}
                           {formatIDR(recItem.menuItem.price)}
                         </span>
                       </div>
@@ -299,7 +302,7 @@ export function RecommendationResults({
                       <div className="flex items-center justify-between mt-2 pt-1">
                         <span className="text-[11px] font-sans font-medium text-on-surface-variant/80 truncate mr-2">
                           {recItem.menuItem.modifierGroups && recItem.menuItem.modifierGroups.length > 0
-                            ? 'Kustomisasi: Gula / Es / Susu'
+                            ? `Kustomisasi: ${recItem.menuItem.modifierGroups.map((g) => g.name).join(' • ')}`
                             : recItem.matchedTags && recItem.matchedTags.length > 0
                             ? recItem.matchedTags.map((t) => t.name).join(' • ')
                             : 'Racikan Pilihan'}
@@ -357,6 +360,9 @@ export function RecommendationResults({
                       {alt.menuItem.name}
                     </h4>
                     <span className="font-price-tabular text-xs font-bold text-primary shrink-0 tabular-nums">
+                      {alt.menuItem.modifierGroups?.some((g) => g.options?.some((o) => o.price > 0)) && (
+                        <span className="text-[10px] font-normal text-on-surface-variant mr-1">Mulai</span>
+                      )}
                       {formatIDR(alt.menuItem.price)}
                     </span>
                   </div>

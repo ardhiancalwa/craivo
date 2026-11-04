@@ -51,12 +51,13 @@ export async function POST(request: Request, { params }: RouteParams) {
     )
   }
 
-  // Validasi metode pembayaran: Hanya pesanan CASH yang boleh dikonfirmasi kasir
-  if (order.paymentMethod !== 'CASH') {
+  // Validasi metode pembayaran: Hanya pesanan CASH, MANUAL_QRIS, dan MANUAL_TRANSFER yang dapat dikonfirmasi kasir secara manual
+  const manualPaymentMethods = ['CASH', 'MANUAL_QRIS', 'MANUAL_TRANSFER']
+  if (!manualPaymentMethods.includes(order.paymentMethod)) {
     return NextResponse.json(
       {
         error: 'INVALID_PAYMENT_METHOD',
-        message: 'Hanya pesanan dengan metode pembayaran Tunai yang dapat dikonfirmasi kasir.',
+        message: 'Hanya pesanan Tunai, QRIS Manual Toko, atau Transfer Bank yang dapat dikonfirmasi kasir.',
       },
       { status: 400 }
     )

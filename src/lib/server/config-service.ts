@@ -24,6 +24,16 @@ export interface CafeConfigDTO {
   productionDomain: string | null
   taxPercentageFormatted: string
   servicePercentageFormatted: string
+  // Metode Pembayaran Fleksibel
+  enableMidtransQris: boolean
+  enableCash: boolean
+  enableManualQris: boolean
+  manualQrisImageUrl: string | null
+  manualQrisName: string | null
+  enableManualTransfer: boolean
+  manualTransferBank: string | null
+  manualTransferAccount: string | null
+  manualTransferName: string | null
 }
 
 export interface UpdateCafeIdentityInput {
@@ -33,6 +43,18 @@ export interface UpdateCafeIdentityInput {
   phone?: string | null
   openingHours?: string | null
   productionDomain?: string | null
+}
+
+export interface UpdatePaymentMethodsInput {
+  enableMidtransQris?: boolean
+  enableCash?: boolean
+  enableManualQris?: boolean
+  manualQrisImageUrl?: string | null
+  manualQrisName?: string | null
+  enableManualTransfer?: boolean
+  manualTransferBank?: string | null
+  manualTransferAccount?: string | null
+  manualTransferName?: string | null
 }
 
 export interface UpdateFinancialPolicyInput {
@@ -207,4 +229,62 @@ export async function updateFinancialPolicy(
     servicePercentageFormatted: formatBpsPercentage(updated.serviceRateBps),
   }
 }
+
+/**
+ * Memperbarui konfigurasi metode pembayaran (Midtrans, Tunai, QRIS Statis, Transfer Bank).
+ */
+export async function updatePaymentMethodsConfig(
+  input: UpdatePaymentMethodsInput,
+  actor: StaffUser,
+  ipAddress?: string | null
+): Promise<CafeConfigDTO> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateData: any = {}
+
+  if (input.enableMidtransQris !== undefined) updateData.enableMidtransQris = Boolean(input.enableMidtransQris)
+  if (input.enableCash !== undefined) updateData.enableCash = Boolean(input.enableCash)
+  if (input.enableManualQris !== undefined) updateData.enableManualQris = Boolean(input.enableManualQris)
+  if (input.manualQrisImageUrl !== undefined) updateData.manualQrisImageUrl = input.manualQrisImageUrl?.trim() || null
+  if (input.manualQrisName !== undefined) updateData.manualQrisName = input.manualQrisName?.trim() || 'QRIS Kafe'
+  if (input.enableManualTransfer !== undefined) updateData.enableManualTransfer = Boolean(input.enableManualTransfer)
+  if (input.manualTransferBank !== undefined) updateData.manualTransferBank = input.manualTransferBank?.trim() || null
+  if (input.manualTransferAccount !== undefined) updateData.manualTransferAccount = input.manualTransferAccount?.trim() || null
+  if (input.manualTransferName !== undefined) updateData.manualTransferName = input.manualTransferName?.trim() || null
+
+  const updated = await prisma.cravioConfig.update({
+    where: { id: MAIN_CONFIG_ID },
+    data: updateData,
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      staffUserId: actor.id,
+      action: 'PAYMENT_METHODS_UPDATED',
+      details: JSON.stringify({
+        actor: actor.username,
+        role: actor.role,
+        updatedFields: Object.keys(updateData),
+      }),
+      ipAddress: ipAddress || '127.0.0.1',
+    },
+  })
+
+  await publishEvent({
+    channel: 'CATALOG',
+    aggregateType: 'CONFIG',
+    aggregateId: MAIN_CONFIG_ID,
+    eventType: 'PAYMENT_METHODS_UPDATED',
+    payload: updateData,
+  })
+
+  return {
+    ...updated,
+    taxPercentageFormatted: formatBpsPercentage(updated.taxRateBps),
+    servicePercentageFormatted: formatBpsPercentage(updated.serviceRateBps),
+  }
+}
+
+
+
+
 

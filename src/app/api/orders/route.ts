@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/server/db'
-import { resolveGuestSession } from '@/lib/server/guest-session'
+import { ensureGuestSessionForTable } from '@/lib/server/guest-session'
 import {
   computePayloadFingerprint,
   claimIdempotencyKey,
@@ -32,7 +32,7 @@ const OrderItemInputSchema = z
 const CreateOrderSchema = z
   .object({
     tableNumber: z.string().trim().min(1).max(10),
-    paymentMethod: z.enum(['QRIS', 'CASH']),
+    paymentMethod: z.enum(['QRIS', 'CASH', 'MANUAL_QRIS', 'MANUAL_TRANSFER']),
     customerNotes: z.string().max(100).optional(),
     quoteToken: z.string().min(1, 'Quote token wajib disertakan.'),
     items: z.array(OrderItemInputSchema).min(1).max(50),
@@ -71,23 +71,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // 2. Validasi Sesi Tamu (Wajib Cookie cravio_guest)
-  const guestSession = await resolveGuestSession(req)
-  if (!guestSession) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: 'GUEST_SESSION_REQUIRED',
-          message:
-            'Sesi tamu tidak ditemukan atau telah kedaluwarsa. Silakan pindai ulang QR meja resmi kafe.',
-        },
-      },
-      { status: 401 }
-    )
-  }
-
-  // 3. Validasi Body Request (Strict)
+  // 2. Validasi Body Request (Strict)
   let rawBody: unknown
   try {
     rawBody = await req.json()
@@ -121,20 +105,31 @@ export async function POST(req: NextRequest) {
   }
 
   const payload = parsed.data
+  const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined
 
-  // 4. Validasi Meja Sesi vs Meja Payload
-  if (guestSession.table.tableNumber !== payload.tableNumber.trim()) {
+  // 3. Validasi & Auto-Recovery Sesi Tamu
+  const ensured = await ensureGuestSessionForTable(
+    payload.tableNumber,
+    req,
+    ipAddress,
+    req.headers.get('user-agent') || undefined
+  )
+
+  if (!ensured) {
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'TABLE_MISMATCH',
-          message: `Sesi tamu terdaftar di meja ${guestSession.table.tableNumber}, bukan meja ${payload.tableNumber}. Silakan pindai ulang QR meja tempat Anda duduk.`,
+          code: 'TABLE_NOT_FOUND',
+          message: `Meja ${payload.tableNumber} tidak ditemukan atau sedang tidak aktif di kafe.`,
         },
       },
-      { status: 403 }
+      { status: 400 }
     )
   }
+
+  const guestSession = ensured.session
+  const newGuestSessionToken = ensured.isNewSession ? ensured.rawSessionToken : null
 
   if (!guestSession.table.isActive) {
     return NextResponse.json(
@@ -201,6 +196,22 @@ export async function POST(req: NextRequest) {
         })
       }
 
+      if (newGuestSessionToken) {
+        replayResponse.cookies.set('cravio_guest', newGuestSessionToken, {
+          path: '/',
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: isSecure,
+          maxAge: 12 * 60 * 60,
+        })
+        replayResponse.cookies.set('cravio_table', guestSession.table.tableNumber, {
+          path: '/',
+          httpOnly: false,
+          sameSite: 'lax',
+          maxAge: 12 * 60 * 60,
+        })
+      }
+
       return replayResponse
     }
 
@@ -263,6 +274,22 @@ export async function POST(req: NextRequest) {
       secure: isSecure,
       maxAge: 24 * 60 * 60,
     })
+
+    if (newGuestSessionToken) {
+      res.cookies.set('cravio_guest', newGuestSessionToken, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: isSecure,
+        maxAge: 12 * 60 * 60,
+      })
+      res.cookies.set('cravio_table', guestSession.table.tableNumber, {
+        path: '/',
+        httpOnly: false,
+        sameSite: 'lax',
+        maxAge: 12 * 60 * 60,
+      })
+    }
 
     return res
   } catch (error: unknown) {

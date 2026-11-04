@@ -22,6 +22,7 @@ const UpdateMenuItemSchema = z.object({
   sortOrder: z.number().int().default(0),
   tagIds: z.array(z.string()).default([]),
   modifierGroupIds: z.array(z.string()).default([]),
+  modifierPriceOverrides: z.record(z.string(), z.number().int().min(0)).optional().default({}),
 })
 
 export async function GET(request: Request, { params }: RouteParams) {
@@ -62,6 +63,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       sortOrder: item.sortOrder,
       tagIds: item.tags.map((t) => t.tagId),
       modifierGroupIds: item.modifierGroups.map((mg) => mg.groupId),
+      modifierPriceOverrides: (item.modifierPriceOverrides as Record<string, number> | null) || {},
     },
   })
 }
@@ -127,6 +129,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
           image: data.image || null,
           isPopular: data.isPopular,
           sortOrder: data.sortOrder,
+          modifierPriceOverrides: data.modifierPriceOverrides || {},
         },
       })
 

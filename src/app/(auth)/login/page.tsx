@@ -6,7 +6,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Lock, User, Eye, EyeOff, AlertCircle, ArrowRight, CheckCircle2, ShieldCheck } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 function LoginForm() {
   const router = useRouter()
@@ -19,12 +18,6 @@ function LoginForm() {
   const [isLoading, setIsLoading] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const [successRole, setSuccessRole] = React.useState<string | null>(null)
-
-  const quickFill = (user: string, pass: string) => {
-    setUsername(user)
-    setPinOrPassword(pass)
-    setErrorMessage(null)
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -102,52 +95,6 @@ function LoginForm() {
           <p className="text-xs text-stone-500 font-normal">
             Akses operasional resmi Admin, Kasir POS, dan Dapur KDS Cravio
           </p>
-        </div>
-
-        {/* Quick Fill Credential Pills (Dev/Demo Helper) */}
-        <div className="rounded-2xl bg-sand-50/80 border border-sand-200/70 p-3.5 space-y-2">
-          <div className="flex items-center justify-between text-[11px] font-mono text-stone-500">
-            <span className="font-semibold uppercase tracking-wider">Kredensial Cepat:</span>
-            <span className="text-[10px]">Klik untuk isi otomatis</span>
-          </div>
-          <div className="grid grid-cols-3 gap-1.5">
-            <button
-              type="button"
-              onClick={() => quickFill('admin', 'adminpassword123')}
-              className={cn(
-                'touch-target text-center px-2 py-2 rounded-xl border text-[11px] font-mono font-medium transition-all cursor-pointer',
-                username === 'admin'
-                  ? 'bg-charcoal-950 text-white border-charcoal-950 shadow-xs'
-                  : 'bg-white text-stone-700 border-sand-200 hover:border-sand-300 hover:bg-white/80'
-              )}
-            >
-              👑 Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => quickFill('kasir', '1234')}
-              className={cn(
-                'touch-target text-center px-2 py-2 rounded-xl border text-[11px] font-mono font-medium transition-all cursor-pointer',
-                username === 'kasir'
-                  ? 'bg-charcoal-950 text-white border-charcoal-950 shadow-xs'
-                  : 'bg-white text-stone-700 border-sand-200 hover:border-sand-300 hover:bg-white/80'
-              )}
-            >
-              💳 Kasir
-            </button>
-            <button
-              type="button"
-              onClick={() => quickFill('barista', '5678')}
-              className={cn(
-                'touch-target text-center px-2 py-2 rounded-xl border text-[11px] font-mono font-medium transition-all cursor-pointer',
-                username === 'barista'
-                  ? 'bg-charcoal-950 text-white border-charcoal-950 shadow-xs'
-                  : 'bg-white text-stone-700 border-sand-200 hover:border-sand-300 hover:bg-white/80'
-              )}
-            >
-              ☕ Barista
-            </button>
-          </div>
         </div>
 
         {/* Error Alert */}

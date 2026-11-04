@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     const [cashQueueCount, paidCount, cancelledCount] = await Promise.all([
       prisma.order.count({
         where: {
-          paymentMethod: 'CASH',
+          paymentMethod: { in: ['CASH', 'MANUAL_QRIS', 'MANUAL_TRANSFER'] },
           paymentStatus: 'WAITING_CASHIER',
           orderStatus: { not: 'CANCELLED' },
         },
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
 
     if (tab === 'cash_queue') {
       whereClause = {
-        paymentMethod: 'CASH',
+        paymentMethod: { in: ['CASH', 'MANUAL_QRIS', 'MANUAL_TRANSFER'] },
         paymentStatus: 'WAITING_CASHIER',
         orderStatus: { not: 'CANCELLED' },
       }
@@ -128,6 +128,7 @@ export async function GET(request: Request) {
         orderStatus: order.orderStatus,
         paymentStatus: order.paymentStatus,
         paymentMethod: order.paymentMethod,
+        paymentProofUrl: order.paymentProofUrl || null,
         createdAt: order.createdAt.toISOString(),
         paidAt: order.paidAt?.toISOString() || null,
         updatedAt: order.updatedAt.toISOString(),

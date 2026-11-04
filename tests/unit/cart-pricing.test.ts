@@ -35,6 +35,31 @@ describe('Cart & Modifier Pricing Logic Suite (Unit Tests)', () => {
     price: 5000,
   }
 
+  // Varian Ukuran Dinamis Ditentukan Kafe
+  const modSizeMedium: SelectedModifier = {
+    optionId: 'opt-size-med',
+    groupId: 'mod-group-size-2',
+    groupName: 'Ukuran Cup',
+    optionName: 'Medium',
+    price: 0,
+  }
+
+  const modSizeLarge: SelectedModifier = {
+    optionId: 'opt-size-lrg',
+    groupId: 'mod-group-size-2',
+    groupName: 'Ukuran Cup',
+    optionName: 'Large',
+    price: 5000,
+  }
+
+  const modSizeLiter: SelectedModifier = {
+    optionId: 'opt-size-1l',
+    groupId: 'mod-group-size-bottle',
+    groupName: 'Pilihan Botol',
+    optionName: '1 Liter Botol Kaca',
+    price: 35000,
+  }
+
   describe('1. Diferensiasi Kunci Unik Baris Keranjang (generateCartItemId)', () => {
     it('menghasilkan ID yang sama jika menu, modifier, dan catatan identik', () => {
       const id1 = generateCartItemId('ks-sela', [modSweetNormal, modOatMilk], 'es dipisah')
@@ -49,6 +74,15 @@ describe('Cart & Modifier Pricing Logic Suite (Unit Tests)', () => {
       const id2 = generateCartItemId('ks-sela', [modSweetLess], 'kurang manis')
 
       expect(id1).not.toBe(id2)
+    })
+
+    it('membedakan baris keranjang jika pelanggan memilih ukuran berbeda (misal Medium vs Large)', () => {
+      const idMedium = generateCartItemId('ks-sela', [modSizeMedium])
+      const idLarge = generateCartItemId('ks-sela', [modSizeLarge])
+
+      expect(idMedium).not.toBe(idLarge)
+      expect(idMedium).toContain('opt-size-med')
+      expect(idLarge).toContain('opt-size-lrg')
     })
 
     it('menghasilkan ID berbeda jika catatan berbeda (menu & modifier sama)', () => {
@@ -87,6 +121,24 @@ describe('Cart & Modifier Pricing Logic Suite (Unit Tests)', () => {
       expect(subtotal).toBe(117000)
       expect(Number.isInteger(subtotal)).toBe(true)
       expect(formatIDR(subtotal)).toBe('Rp117.000')
+    })
+
+    it('menghitung varian ukuran kustom kafe (Medium Rp0 vs Large +Rp5.000 vs Literan +Rp35.000)', () => {
+      const basePrice = 22000 // Harga dasar ukuran terendah
+      
+      // Kasus 1: Pilihan Medium (+Rp0)
+      const unitMedium = basePrice + modSizeMedium.price
+      expect(unitMedium).toBe(22000)
+
+      // Kasus 2: Pilihan Large (+Rp5.000 ditentukan kafe)
+      const unitLarge = basePrice + modSizeLarge.price
+      expect(unitLarge).toBe(27000)
+      expect(formatIDR(unitLarge * 2)).toBe('Rp54.000')
+
+      // Kasus 3: Porsi Botol 1 Liter (+Rp35.000 ditentukan kafe)
+      const unitLiter = basePrice + modSizeLiter.price
+      expect(unitLiter).toBe(57000)
+      expect(formatIDR(unitLiter)).toBe('Rp57.000')
     })
 
     it('formatIDR menghasilkan string Rupiah terformat tanpa sen pecahan desimal', () => {

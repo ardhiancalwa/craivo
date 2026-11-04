@@ -37,7 +37,15 @@ export function CartClientView({ tableNumber }: CartClientViewProps) {
   const { showToast } = useToast()
 
   // State: Payment method & Catatan umum
-  const [paymentMethod, setPaymentMethod] = React.useState<'QRIS' | 'CASH'>('QRIS')
+  const [paymentMethod, setPaymentMethod] = React.useState<'QRIS' | 'CASH' | 'MANUAL_QRIS' | 'MANUAL_TRANSFER'>('QRIS')
+  const [availableMethods, setAvailableMethods] = React.useState({
+    enableMidtransQris: true,
+    enableCash: true,
+    enableManualQris: false,
+    manualQrisName: 'QRIS Kafe',
+    enableManualTransfer: false,
+    manualTransferBank: 'BCA',
+  })
   const [customerNotes, setCustomerNotes] = React.useState('')
 
   // State: Catalog items cache for editing modifier options
@@ -53,6 +61,36 @@ export function CartClientView({ tableNumber }: CartClientViewProps) {
     updatedTotal: number
     message: string
   } | null>(null)
+
+  // Fetch public payment methods config on mount
+  React.useEffect(() => {
+    let isMounted = true
+    async function loadPaymentMethods() {
+      try {
+        const res = await fetch('/api/config/payment-methods')
+        const json = await res.json()
+        if (isMounted && json.success && json.data) {
+          setAvailableMethods(json.data)
+          // Set default payment method based on available
+          if (json.data.enableMidtransQris) {
+            setPaymentMethod('QRIS')
+          } else if (json.data.enableManualQris) {
+            setPaymentMethod('MANUAL_QRIS')
+          } else if (json.data.enableCash) {
+            setPaymentMethod('CASH')
+          } else if (json.data.enableManualTransfer) {
+            setPaymentMethod('MANUAL_TRANSFER')
+          }
+        }
+      } catch {
+        // Fallback to default
+      }
+    }
+    loadPaymentMethods()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   // Fetch catalog on mount for modifier definitions
   React.useEffect(() => {
@@ -436,36 +474,88 @@ export function CartClientView({ tableNumber }: CartClientViewProps) {
           <span className="block text-xs font-bold uppercase tracking-wider text-brand/70 mb-2.5">
             Metode Pembayaran
           </span>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('QRIS')}
-              className={`touch-target p-3.5 rounded-2xl border text-left transition-all ${
-                paymentMethod === 'QRIS'
-                  ? 'border-2 border-accent bg-surface shadow-xs'
-                  : 'border-border bg-surface/70 hover:border-brand/30'
-              }`}
-            >
-              <span className="block text-xs font-bold text-brand">QRIS Dinamis</span>
-              <span className="text-[10px] text-brand/60 mt-0.5 block leading-tight">
-                Gopay, OVO, BCA, Livin, dll
-              </span>
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {availableMethods.enableMidtransQris && (
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('QRIS')}
+                className={`touch-target p-3 rounded-2xl border text-left transition-all ${
+                  paymentMethod === 'QRIS'
+                    ? 'border-2 border-accent bg-surface shadow-xs'
+                    : 'border-border bg-surface/70 hover:border-brand/30'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="block text-xs font-bold text-brand">QRIS Dinamis</span>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Otomatis</span>
+                </div>
+                <span className="text-[10px] text-brand/60 mt-0.5 block leading-tight">
+                  Verifikasi instan via GoPay, BCA, Livin, dll
+                </span>
+              </button>
+            )}
 
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('CASH')}
-              className={`touch-target p-3.5 rounded-2xl border text-left transition-all ${
-                paymentMethod === 'CASH'
-                  ? 'border-2 border-accent bg-surface shadow-xs'
-                  : 'border-border bg-surface/70 hover:border-brand/30'
-              }`}
-            >
-              <span className="block text-xs font-bold text-brand">Bayar Tunai</span>
-              <span className="text-[10px] text-brand/60 mt-0.5 block leading-tight">
-                Konfirmasi fisik di kasir kafe
-              </span>
-            </button>
+            {availableMethods.enableManualQris && (
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('MANUAL_QRIS')}
+                className={`touch-target p-3 rounded-2xl border text-left transition-all ${
+                  paymentMethod === 'MANUAL_QRIS'
+                    ? 'border-2 border-accent bg-surface shadow-xs'
+                    : 'border-border bg-surface/70 hover:border-brand/30'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="block text-xs font-bold text-brand">
+                    {availableMethods.manualQrisName || 'QRIS Toko'}
+                  </span>
+                  <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">Statis</span>
+                </div>
+                <span className="text-[10px] text-brand/60 mt-0.5 block leading-tight">
+                  Scan barcode QRIS kafe & konfirmasi kasir
+                </span>
+              </button>
+            )}
+
+            {availableMethods.enableCash && (
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('CASH')}
+                className={`touch-target p-3 rounded-2xl border text-left transition-all ${
+                  paymentMethod === 'CASH'
+                    ? 'border-2 border-accent bg-surface shadow-xs'
+                    : 'border-border bg-surface/70 hover:border-brand/30'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="block text-xs font-bold text-brand">Bayar Tunai</span>
+                  <span className="text-[10px] bg-surface-container text-brand/80 font-bold px-1.5 py-0.5 rounded">Kasir</span>
+                </div>
+                <span className="text-[10px] text-brand/60 mt-0.5 block leading-tight">
+                  Bayar langsung ke kasir kafe
+                </span>
+              </button>
+            )}
+
+            {availableMethods.enableManualTransfer && (
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('MANUAL_TRANSFER')}
+                className={`touch-target p-3 rounded-2xl border text-left transition-all ${
+                  paymentMethod === 'MANUAL_TRANSFER'
+                    ? 'border-2 border-accent bg-surface shadow-xs'
+                    : 'border-border bg-surface/70 hover:border-brand/30'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="block text-xs font-bold text-brand">Transfer Bank</span>
+                  <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">{availableMethods.manualTransferBank || 'Bank'}</span>
+                </div>
+                <span className="text-[10px] text-brand/60 mt-0.5 block leading-tight">
+                  Transfer manual & konfirmasi kasir
+                </span>
+              </button>
+            )}
           </div>
         </section>
       </div>
@@ -529,7 +619,11 @@ export function CartClientView({ tableNumber }: CartClientViewProps) {
             ) : (
               <span>
                 {paymentMethod === 'QRIS'
-                  ? 'Bayar Sekarang via QRIS (Midtrans) →'
+                  ? 'Bayar via QRIS Otomatis (Midtrans) →'
+                  : paymentMethod === 'MANUAL_QRIS'
+                  ? 'Pesan & Tampilkan QRIS Kafe →'
+                  : paymentMethod === 'MANUAL_TRANSFER'
+                  ? 'Pesan & Info Rekening Transfer →'
                   : 'Pesan & Bayar Tunai di Kasir →'}
               </span>
             )}

@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/toast'
 import { audioAlert } from '@/lib/audio-alert'
 import { useRealtimeStream, type StreamConnectionStatus } from '@/lib/hooks/use-realtime-stream'
 import { formatIDR, cn } from '@/lib/utils'
+import { PaymentProofUploader } from '@/components/payment/payment-proof-uploader'
 
 export interface TrackerItemModifier {
   id: string
@@ -33,6 +34,7 @@ export interface TrackerOrder {
   orderStatus: string
   paymentStatus: string
   paymentMethod: string
+  paymentProofUrl?: string | null
   subtotalAmount: number
   taxAmount: number
   serviceAmount: number
@@ -143,19 +145,42 @@ export function TrackerClientView({ initialOrder }: TrackerClientViewProps) {
     }
 
     if (isWaitingCashier) {
+      const isManual = order.paymentMethod === 'MANUAL_QRIS' || order.paymentMethod === 'MANUAL_TRANSFER'
       return (
-        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 space-y-2 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase font-bold tracking-wider text-amber-800">
-              Status Pembayaran
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
-              Menunggu Kasir
-            </span>
+        <div className="space-y-3">
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 space-y-2 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs uppercase font-bold tracking-wider text-amber-800">
+                Status Pembayaran
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                Menunggu Konfirmasi Kasir
+              </span>
+            </div>
+            <p className="text-xs leading-relaxed text-amber-900">
+              {order.paymentMethod === 'MANUAL_QRIS' ? (
+                <>
+                  Silakan selesaikan pembayaran via <strong>QRIS Toko Kafe</strong> sebesar <strong className="font-price-tabular">{formatIDR(order.totalAmount)}</strong>. Kasir akan memverifikasi mutasi rekening dan bukti bayar Anda.
+                </>
+              ) : order.paymentMethod === 'MANUAL_TRANSFER' ? (
+                <>
+                  Silakan selesaikan transfer bank/e-wallet sebesar <strong className="font-price-tabular">{formatIDR(order.totalAmount)}</strong>. Kasir akan mengonfirmasi lunas setelah dana masuk.
+                </>
+              ) : (
+                <>
+                  Silakan menuju meja kasir dan tunjukkan nomor pesanan <strong>#{order.orderNumber}</strong> untuk menyelesaikan pembayaran tunai fisik sebesar <strong className="font-price-tabular">{formatIDR(order.totalAmount)}</strong>.
+                </>
+              )}
+            </p>
           </div>
-          <p className="text-xs leading-relaxed text-amber-900">
-            Silakan menuju meja kasir dan tunjukkan nomor pesanan <strong>#{order.orderNumber}</strong> untuk menyelesaikan pembayaran tunai fisik sebesar <strong className="font-price-tabular">{formatIDR(order.totalAmount)}</strong>.
-          </p>
+
+          {isManual && (
+            <PaymentProofUploader
+              orderId={order.id}
+              orderNumber={order.orderNumber}
+              initialProofUrl={order.paymentProofUrl}
+            />
+          )}
         </div>
       )
     }

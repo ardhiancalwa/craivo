@@ -12,6 +12,14 @@ const CreateModifierGroupSchema = z.object({
   isRequired: z.boolean().default(false),
   minSelect: z.number().int().min(0).default(0),
   maxSelect: z.number().int().min(1).default(1),
+  options: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1, 'Nama opsi wajib diisi').max(50),
+        price: z.number().int().min(0, 'Harga tidak boleh negatif').default(0),
+      })
+    )
+    .optional(),
 })
 
 export async function GET(request: Request) {
@@ -96,35 +104,59 @@ export async function POST(request: Request) {
   const data = parsed.data
 
   try {
-    const created = await prisma.modifierGroup.create({
-      data: {
-        name: data.name,
-        isRequired: data.isRequired,
-        minSelect: data.minSelect,
-        maxSelect: data.maxSelect,
-      },
-    })
-
     const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
-    await prisma.auditLog.create({
-      data: {
-        staffUserId: staff.id,
-        action: 'CREATE_MODIFIER_GROUP',
-        details: JSON.stringify({
-          groupId: created.id,
-          name: created.name,
-          actor: staff.username,
-        }),
-        ipAddress,
-      },
+
+    const created = await prisma.$transaction(async (tx) => {
+      const group = await tx.modifierGroup.create({
+        data: {
+          name: data.name,
+          isRequired: data.isRequired,
+          minSelect: data.minSelect,
+          maxSelect: data.maxSelect,
+        },
+      })
+
+      if (data.options && data.options.length > 0) {
+        await tx.modifierOption.createMany({
+          data: data.options.map((opt) => ({
+            groupId: group.id,
+            name: opt.name,
+            price: opt.price,
+            isAvailable: true,
+          })),
+        })
+      }
+
+      await tx.auditLog.create({
+        data: {
+          staffUserId: staff.id,
+          action: 'CREATE_MODIFIER_GROUP',
+          details: JSON.stringify({
+            groupId: group.id,
+            name: group.name,
+            optionsCount: data.options?.length || 0,
+            actor: staff.username,
+          }),
+          ipAddress,
+        },
+      })
+
+      return await tx.modifierGroup.findUnique({
+        where: { id: group.id },
+        include: {
+          options: {
+            orderBy: { price: 'asc' },
+          },
+        },
+      })
     })
 
     await publishEvent({
       channel: 'CATALOG',
       aggregateType: 'MODIFIER',
-      aggregateId: created.id,
+      aggregateId: created?.id || '',
       eventType: 'STOCK_TOGGLED',
-      payload: { groupId: created.id, action: 'CREATED' },
+      payload: { groupId: created?.id, action: 'CREATED' },
     })
 
     return NextResponse.json({ success: true, data: created })

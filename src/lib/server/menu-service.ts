@@ -134,20 +134,23 @@ export async function getCatalogData(
       slug: t.tag.slug,
       dimension: t.tag.dimension,
     })),
-    modifierGroups: item.modifierGroups.map((mg) => ({
-      id: mg.group.id,
-      name: mg.group.name,
-      isRequired: mg.group.isRequired,
-      minSelect: mg.group.minSelect,
-      maxSelect: mg.group.maxSelect,
-      options: mg.group.options.map((opt) => ({
-        id: opt.id,
-        groupId: opt.groupId,
-        name: opt.name,
-        price: opt.price,
-        isAvailable: opt.isAvailable,
-      })),
-    })),
+    modifierGroups: (() => {
+      const overrides = (item.modifierPriceOverrides as Record<string, number> | null) || {}
+      return item.modifierGroups.map((mg) => ({
+        id: mg.group.id,
+        name: mg.group.name,
+        isRequired: mg.group.isRequired,
+        minSelect: mg.group.minSelect,
+        maxSelect: mg.group.maxSelect,
+        options: mg.group.options.map((opt) => ({
+          id: opt.id,
+          groupId: opt.groupId,
+          name: opt.name,
+          price: typeof overrides[opt.id] === 'number' ? (overrides[opt.id] as number) : opt.price,
+          isAvailable: opt.isAvailable,
+        })),
+      }))
+    })(),
   }))
 
   return {

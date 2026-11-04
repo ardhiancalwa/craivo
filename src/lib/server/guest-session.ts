@@ -124,3 +124,77 @@ export async function resolveGuestSession(
 
   return session
 }
+
+export interface EnsuredGuestSessionResult {
+  session: GuestSessionWithTable
+  isNewSession: boolean
+  rawSessionToken: string | null
+}
+
+/**
+ * Memastikan sesi tamu tersedia untuk meja tertentu.
+ * 1. Coba selesaikan sesi aktif dari cookie cravio_guest.
+ * 2. Jika sesi ada dan sesuai nomor meja yang diminta, kembalikan sesi tersebut.
+ * 3. Jika sesi tidak ada / kedaluwarsa / beda meja, namun nomor meja valid & aktif di database:
+ *    Auto-recovery: buatkan sesi tamu baru secara transparan sehingga tamu tidak terganjal error sesi.
+ */
+export async function ensureGuestSessionForTable(
+  tableNumber: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tokenOrRequest: any,
+  ipAddress?: string,
+  userAgent?: string
+): Promise<EnsuredGuestSessionResult | null> {
+  const cleanTableNumber = (tableNumber || '').trim()
+  if (!cleanTableNumber) {
+    return null
+  }
+
+  // 1. Cek sesi yang ada di cookie
+  const existingSession = await resolveGuestSession(tokenOrRequest)
+  if (
+    existingSession &&
+    existingSession.table.tableNumber.toLowerCase() === cleanTableNumber.toLowerCase()
+  ) {
+    return {
+      session: existingSession,
+      isNewSession: false,
+      rawSessionToken: null,
+    }
+  }
+
+  // 2. Auto-Recovery: Validasi apakah meja aktif di database
+  const activeTable = await prisma.table.findFirst({
+    where: {
+      tableNumber: { equals: cleanTableNumber, mode: 'insensitive' },
+      isActive: true,
+    },
+  })
+
+  if (!activeTable) {
+    return null
+  }
+
+  // 3. Buat sesi tamu baru
+  const newCreated = await createGuestSession(activeTable.id, ipAddress, userAgent)
+  const sessionWithTable: GuestSessionWithTable = {
+    id: newCreated.id,
+    tableId: activeTable.id,
+    sessionTokenHash: crypto.createHash('sha256').update(newCreated.rawSessionToken).digest('hex'),
+    expiresAt: newCreated.expiresAt,
+    createdAt: new Date(),
+    table: {
+      id: activeTable.id,
+      tableNumber: activeTable.tableNumber,
+      qrSlug: activeTable.qrSlug,
+      isActive: activeTable.isActive,
+    },
+  }
+
+  return {
+    session: sessionWithTable,
+    isNewSession: true,
+    rawSessionToken: newCreated.rawSessionToken,
+  }
+}
+
