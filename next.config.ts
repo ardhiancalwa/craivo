@@ -16,6 +16,7 @@ const cspHeader = `
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  serverExternalPackages: ['@prisma/client'],
   async headers() {
     return [
       {
