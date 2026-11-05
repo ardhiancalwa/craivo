@@ -168,3 +168,12 @@ pnpm run test
 pnpm run typecheck && pnpm run build
 ```
 
+## 7. Konfirmasi Pembayaran Manual dan Pemeriksaan Safari
+
+- Kasir mengonfirmasi `CASH`, `MANUAL_QRIS`, dan `MANUAL_TRANSFER` melalui `/api/staff/orders/[id]/confirm-cash`. Bukti bayar bersifat opsional. QRIS Midtrans tetap diverifikasi melalui gateway.
+- Konfirmasi memakai metode pesanan dalam transaksi atomik. Konfirmasi ulang tidak membuat histori pembayaran atau event dapur ganda. Histori gateway, payload KDS, dan audit mencatat metode sebenarnya.
+- Jika muncul `ORDER_STATE_CONFLICT` (HTTP 409), muat ulang antrean sebelum mencoba lagi; status pesanan mungkin berubah saat diproses.
+- Untuk Safari, buka URL lengkap termasuk `https://` melalui kolom alamat Safari. Jika layar menampilkan hasil pencarian Google, ketuk tautan lengkap secara langsung; halaman pencarian tersebut belum membuktikan website gagal dimuat.
+- Checkout memakai UUID v4 dari Web Crypto, dengan fallback `getRandomValues` jika `randomUUID` belum tersedia. Konfirmasi cepat kasir mengandalkan transaksi atomik server tanpa header idempotensi yang tidak dipakai endpoint tersebut.
+- Uji pada iPhone asli setelah deploy: buka tautan meja, lewati kuis, tambah menu, checkout QRIS toko, lalu konfirmasi dari kasir dengan dan tanpa bukti. Ulangi konfirmasi dan pastikan tidak ada tiket dapur ganda.
+

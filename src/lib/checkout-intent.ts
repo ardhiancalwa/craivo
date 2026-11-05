@@ -1,3 +1,5 @@
+import { createUuid } from './utils'
+
 export interface CheckoutIntent {
   key: string // UUID v4
   fingerprint: string
@@ -47,7 +49,7 @@ export function computeClientFingerprint(params: {
  */
 export function getOrCreateCheckoutIntent(fingerprint: string): string {
   if (typeof window === 'undefined') {
-    return crypto.randomUUID()
+    return createUuid()
   }
 
   try {
@@ -63,7 +65,7 @@ export function getOrCreateCheckoutIntent(fingerprint: string): string {
       }
     }
 
-    const newKey = crypto.randomUUID()
+    const newKey = createUuid()
     const newIntent: CheckoutIntent = {
       key: newKey,
       fingerprint,
@@ -72,7 +74,7 @@ export function getOrCreateCheckoutIntent(fingerprint: string): string {
     localStorage.setItem(STORAGE_INTENT_KEY, JSON.stringify(newIntent))
     return newKey
   } catch {
-    return crypto.randomUUID()
+    return createUuid()
   }
 }
 

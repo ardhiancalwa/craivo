@@ -263,7 +263,6 @@ export function PosClientView() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Idempotency-Key': crypto.randomUUID(),
         },
       })
       const data = await res.json()

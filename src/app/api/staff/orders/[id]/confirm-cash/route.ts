@@ -52,8 +52,11 @@ export async function POST(request: Request, { params }: RouteParams) {
   }
 
   // Validasi metode pembayaran: Hanya pesanan CASH, MANUAL_QRIS, dan MANUAL_TRANSFER yang dapat dikonfirmasi kasir secara manual
-  const manualPaymentMethods = ['CASH', 'MANUAL_QRIS', 'MANUAL_TRANSFER']
-  if (!manualPaymentMethods.includes(order.paymentMethod)) {
+  if (
+    order.paymentMethod !== 'CASH' &&
+    order.paymentMethod !== 'MANUAL_QRIS' &&
+    order.paymentMethod !== 'MANUAL_TRANSFER'
+  ) {
     return NextResponse.json(
       {
         error: 'INVALID_PAYMENT_METHOD',
@@ -91,6 +94,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   }
 
   const now = new Date()
+  const gateway = order.paymentMethod === 'CASH' ? 'MANUAL_CASH' : order.paymentMethod
   const ipAddress = request.headers.get('x-forwarded-for') || '127.0.0.1'
 
   try {
@@ -102,7 +106,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       const updateResult = await tx.order.updateMany({
         where: {
           id: orderId,
-          paymentMethod: 'CASH',
+          paymentMethod: order.paymentMethod,
           paymentStatus: { not: 'PAID' },
           orderStatus: { not: 'CANCELLED' },
         },
@@ -147,13 +151,13 @@ export async function POST(request: Request, { params }: RouteParams) {
         },
       })
 
-      // Catat PaymentAttempt untuk histori pembayaran CASH
-      const cashAttemptSuffix = Date.now().toString(36)
+      // Catat metode pembayaran sebenarnya untuk rekonsiliasi kasir.
+      const attemptSuffix = Date.now().toString(36)
       await tx.paymentAttempt.create({
         data: {
           orderId: freshOrder.id,
-          merchantOrderId: `${freshOrder.orderNumber}-CASH-${cashAttemptSuffix}`,
-          gateway: 'MANUAL_CASH',
+          merchantOrderId: `${freshOrder.orderNumber}-${freshOrder.paymentMethod}-${attemptSuffix}`,
+          gateway,
           grossAmount: freshOrder.totalAmount,
           status: 'PAID',
           expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
@@ -193,7 +197,7 @@ export async function POST(request: Request, { params }: RouteParams) {
             tableNumber: freshOrder.table?.tableNumber || '',
             totalAmount: freshOrder.totalAmount,
             paidAt: now.toISOString(),
-            paymentMethod: 'CASH',
+            paymentMethod: freshOrder.paymentMethod,
             confirmedBy: staff.username,
           }),
         },
@@ -220,12 +224,13 @@ export async function POST(request: Request, { params }: RouteParams) {
         data: {
           orderId: freshOrder.id,
           staffUserId: staff.id,
-          action: 'CONFIRM_CASH',
+          action: freshOrder.paymentMethod === 'CASH' ? 'CONFIRM_CASH' : 'CONFIRM_MANUAL_PAYMENT',
           details: JSON.stringify({
             confirmedBy: staff.username,
             role: staff.role,
             amount: freshOrder.totalAmount,
             orderNumber: freshOrder.orderNumber,
+            paymentMethod: freshOrder.paymentMethod,
           }),
           ipAddress,
         },
@@ -241,7 +246,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       success: true,
       message: result.idempotent
         ? 'Pesanan ini sudah dikonfirmasi lunas.'
-        : 'Pembayaran tunai berhasil dikonfirmasi kasir.',
+        : 'Pembayaran berhasil dikonfirmasi kasir.',
       idempotent: result.idempotent,
       order: {
         id: result.order.id,
@@ -252,6 +257,20 @@ export async function POST(request: Request, { params }: RouteParams) {
       },
     })
   } catch (error: unknown) {
+    if (error instanceof Error && error.message === 'ORDER_STATE_CONFLICT') {
+      return NextResponse.json(
+        { error: 'ORDER_STATE_CONFLICT', message: 'Status pesanan berubah. Muat ulang antrean dan coba lagi.' },
+        { status: 409 }
+      )
+    }
+
+    if (error instanceof Error && error.message === 'ORDER_NOT_FOUND') {
+      return NextResponse.json(
+        { error: 'ORDER_NOT_FOUND', message: 'Pesanan tidak ditemukan.' },
+        { status: 404 }
+      )
+    }
+
     if (error instanceof Error && error.message === 'ORDER_CANCELLED') {
       return NextResponse.json(
         {
@@ -262,9 +281,9 @@ export async function POST(request: Request, { params }: RouteParams) {
       )
     }
 
-    console.error('Failed to confirm cash order:', error)
+    console.error('Failed to confirm manual payment:', error)
     return NextResponse.json(
-      { error: 'SERVER_ERROR', message: 'Gagal mengonfirmasi pembayaran tunai pada server.' },
+      { error: 'SERVER_ERROR', message: 'Gagal mengonfirmasi pembayaran pada server.' },
       { status: 500 }
     )
   }
